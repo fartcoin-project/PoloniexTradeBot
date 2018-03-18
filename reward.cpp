@@ -54,12 +54,15 @@ int main()
             int64_t nSubsidy = SubsidyValue(minsub,heightresult);
             count+=nSubsidy; 
 
-	    if(nHeight < 10){
-            cout << "Block    " << i << " subsidy = " << minsub << "/(   " << nHeight << "/  10) = "<< nSubsidy << '\n';
+	    if(nHeight == 1){
+            cout << "Block    " << i << " subsidy = " << minsub << "/(   " << nHeight << "/  10) = "<< nSubsidy / 100000000 << "." << nSubsidy % 100000000<< '\n';
+    	    }
+	    else if(nHeight < 10){
+            cout << "Block    " << i << " subsidy = " << minsub << "/(   " << nHeight << "/  10) =  "<< nSubsidy / 100000000 << "." << nSubsidy % 100000000<< '\n';
     	    }
             if(nHeight == 10){
-            cout << "Block   " << i << " subsidy = " << minsub << "/(  " << nHeight << "/  10) = "<< nSubsidy << '\n';
-    	    cout << "************************************************** total coins 10 blocks = " << count << '\n'; 
+            cout << "Block   " << i << " subsidy = " << minsub << "/(  " << nHeight << "/  10) =  "<< nSubsidy / 100000000 << "." << nSubsidy % 100000000<< '\n';
+    	     
             }
         }
        
@@ -70,11 +73,11 @@ int main()
             int64_t nSubsidy = SubsidyValue(minsub,heightresult);
             count+=nSubsidy; 
             if(nHeight < 100){
-            cout << "Block   " << i << " subsidy =  " << minsub << "/(  " << nHeight << "/ 100) = "<< nSubsidy << '\n';
+            cout << "Block   " << i << " subsidy =  " << minsub << "/(  " << nHeight << "/ 100) =   "<< nSubsidy / 100000000 << "." << nSubsidy % 100000000<< '\n';
     	    }
             if(nHeight == 100){
-            cout << "Block  " << i << " subsidy =  " << minsub << "/( " << nHeight << "/ 100) = "<< nSubsidy << '\n';
-    	    cout << "************************************************* total coins 100 blocks = " << count << '\n';    	    
+            cout << "Block  " << i << " subsidy =  " << minsub << "/( " << nHeight << "/ 100) =   "<< nSubsidy / 100000000 << "." << nSubsidy % 100000000<< '\n';
+    	       	    
             }                    
         }
         
@@ -85,11 +88,11 @@ int main()
             int64_t nSubsidy = SubsidyValue(minsub,heightresult);
             count+=nSubsidy; 
             if(nHeight < 1000){
-            cout << "Block  " << i << " subsidy =   " << minsub << "/( " << nHeight << "/1000) = "<< nSubsidy << '\n';
+            cout << "Block  " << i << " subsidy =   " << minsub << "/( " << nHeight << "/1000) =    "<< nSubsidy / 100000000 << "." << nSubsidy % 100000000<< '\n';
     	    }
             if(nHeight == 1000){
-            cout << "Block " << i << " subsidy =   " << minsub << "/(" << nHeight << "/1000) = "<< nSubsidy << '\n';
-    	    cout << "************************************************ total coins 1000 blocks = " << count << '\n';    	                
+            cout << "Block " << i << " subsidy =   " << minsub << "/(" << nHeight << "/1000) =    "<< nSubsidy / 100000000 << "." << nSubsidy % 100000000<< '\n';
+    	        	                
             }                           	   
         }
 	else if (nHeight < 10001){ 
@@ -99,11 +102,11 @@ int main()
             int64_t nSubsidy = SubsidyValue(minsub,heightresult);
             count+=nSubsidy; 
             if(nHeight < 10000){
-            cout << "Block  " << i << " subsidy =    " << minsub << "/( " << nHeight << "/10000) = "<< nSubsidy << '\n';
+            cout << "Block " << i << " subsidy =    " << minsub << "/( " << nHeight << "/10000) =   "<< nSubsidy / 100000000 << "." << nSubsidy % 100000000<< '\n';
     	    }
             if(nHeight == 10000){
-            cout << "Block " << i << " subsidy =    " << minsub << "/(" << nHeight << "/10000) = "<< nSubsidy << '\n';
-    	    cout << "************************************************ total coins 10000 blocks = " << count << '\n';    	                
+            cout << "Block" << i << " subsidy =    " << minsub << "/(" << nHeight << "/10000) =   "<< nSubsidy / 100000000 << "." << nSubsidy % 100000000<< '\n';
+    	       	                
             }                           	   
         }
 	else if (nHeight < 100001){ 
@@ -113,11 +116,11 @@ int main()
             int64_t nSubsidy = SubsidyValue(minsub,heightresult);
             count+=nSubsidy; 
             if(nHeight < 100000){
-            cout << "Block  " << i << " subsidy =   " << minsub << "/( " << nHeight << "/100000) = "<< nSubsidy << '\n';
+            cout << "Block " << i << " subsidy =    " << minsub << "/(" << nHeight << "/100000)=    "<< nSubsidy / 100000000 << "." << nSubsidy % 100000000<< '\n';
     	    }
             if(nHeight == 100000){
-            cout << "Block " << i << " subsidy =   " << minsub << "/(" << nHeight << "/100000) = "<< nSubsidy << '\n';
-    	    cout << "************************************************ total coins 100000 blocks = " << count << '\n';    	                
+            cout << "Block" << i << " subsidy =    " << minsub << "/(" << nHeight << "/100000)=   "<< nSubsidy / 100000000 << "." << nSubsidy % 100000000<< '\n';
+    	       	                
             }                           	   
         }
 	else if (nHeight < 1000001){ 
@@ -127,11 +130,11 @@ int main()
             int64_t nSubsidy = SubsidyValue(minsub,heightresult);
             count+=nSubsidy; 
             if(nHeight < 1000000){
-            cout << "Block  " << i << " subsidy =   " << minsub << "/( " << nHeight << "/1000000) = "<< nSubsidy << '\n';
+            cout << "Block " << i << " subsidy =    " << minsub << "/(" << nHeight << "/1000000) =  "<< nSubsidy / 100000000 << "." << nSubsidy % 100000000<< '\n';
     	    }
             if(nHeight == 1000000){
-            cout << "Block " << i << " subsidy =   " << minsub << "/(" << nHeight << "/1000000) = "<< nSubsidy << '\n';
-    	    cout << "************************************************ total coins 1000000 blocks = " << count << '\n';    	                
+            cout << "Block " << i << " subsidy =   " << minsub << "/(" << nHeight << "/1000000)=  "<< nSubsidy / 100000000 << "." << nSubsidy % 100000000<< '\n';
+    	        	                
             }                           	   
         }
 	else if (nHeight < 10000001){ 
@@ -141,22 +144,22 @@ int main()
             int64_t nSubsidy = SubsidyValue(minsub,heightresult);
             count+=nSubsidy; 
             if(nHeight < 10000000){
-            cout << "Block  " << i << " subsidy =   " << minsub << "/( " << nHeight << "/10000000) = "<< nSubsidy << '\n';
+            cout << "Block " << i << " subsidy =    " << minsub << "/(" << nHeight << "/10000000)=  "<< nSubsidy / 100000000 << "." << nSubsidy % 100000000<< '\n';
     	    }
             if(nHeight == 10000000){
-            cout << "Block " << i << " subsidy =   " << minsub << "/(" << nHeight << "/10000000) = "<< nSubsidy << '\n';
-    	    cout << "************************************************ total coins 10000000 blocks = " << count << '\n';    	                
+            cout << "Block " << i << " subsidy=    " << minsub << "/(" << nHeight << "/10000000)=  "<< nSubsidy / 100000000 << "." << nSubsidy % 100000000<< '\n';
+    	       	                
             }                           	   
         }
 
         else {
-            cout << "Block " << i << " subsidy = " << nSubsidy << '\n';
+            cout << "Block " << i << " subsidy = " << nSubsidy / 100000000 << "." << nSubsidy % 100000000<< '\n';
         }
         
     };//End for()
     cout << "************************************************************************************************" << '\n';
     cout << '\n';  
-    cout << "Total Fartcoins generated after " << j << " blocks = " << count << '\n';
+    cout << "Total Fartcoins generated after " << j << " blocks = " << count / 100000000 << "." << count % 100000000 << '\n';
     
 return 0;
 }
