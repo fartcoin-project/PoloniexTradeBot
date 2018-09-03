@@ -3,6 +3,11 @@
 # Where 0.005 is the BTC Value for each Altcoin 
 # Script by BitcoinDaytraderChannel@gmail.com
 # Youtube.com/c/BitcoinDaytrader
+# Before running this script you need to
+# 1) Download the Poloniex Library: https://github.com/s4w3d0ff/python-poloniex/
+# 2) pip3 install https://github.com/s4w3d0ff/python-poloniex/archive/v0.4.7.zip
+# 3) Place this script in the python-poloniex Folder on your PC
+# 4) Adjust on line 35 the Setup: 'Your_Poloniex_Key_Here' & 'Your_Poloniex_Secret_Here'
 
 # Import Standard Library Modules
 import time
