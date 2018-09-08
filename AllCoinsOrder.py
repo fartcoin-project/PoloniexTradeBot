@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Run the script: python poloniex.py 0.005 
+# Run the script: python AllCoinsOrder.py 0.005 
 # Where 0.005 is the BTC Value for each Altcoin 
 # Script by BitcoinDaytraderChannel@gmail.com
 # Youtube.com/c/BitcoinDaytrader
