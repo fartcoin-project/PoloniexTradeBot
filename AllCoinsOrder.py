@@ -22,7 +22,7 @@ try: # First check for user BTC Value input
 	print(" # Budget=", budget , "#")	
 	print(" #################")
 except: # Print an Exeption (error) if there is no input
-	print("put Budget in as poloniex.py 0.005")
+	print("put Budget in as python AllCoinsOrder.py 0.005")
 	exit(1)
 
 def backoff(msg): # Function for the Error Message later in script
@@ -40,7 +40,8 @@ while True: # Setup to connect to Poloniex API
 		exit(1)
 
 if __name__ == '__main__':	# Start the main BUY/SELL script
-	PoloniexCoins = ["AMP","ARDR","BAT","BCH","BCN","BTCD","BTM","BTS","BURST","CLAM","CVC","DASH","DCR","DGB","DOGE","EMC2","EOS","ETC","ETH","EXP","FCT","GAME","GAS","GNO","GNT","GRC","HUC","KNC","LBC","LOOM","LSK","LTC","MAID","NAV","NEOS","NMC","NXT","OMG","OMNI","PASC","POT","PPC","REP","SBD","SC","SNT","STEEM","STORJ","STR","STRAT","SYS","VIA","VRC","VTC","XBC","XCP","XEM","XMR","XPM","XRP","ZEC","ZRX"]
+	PoloniexCoins = ["AMP","ARDR","BAT","BCH","BCN","BTS","BURST","CLAM","CVC","DASH","DCR","DGB","DOGE","EOS","ETC","ETH","EXP","FCT","GAME","GAS","GNO","GNT","HUC","KNC","LBC","LOOM","LSK","LTC","MAID","NAV","NMC","NXT","OMG","OMNI","PASC","PPC","REP","SBD","SC","SNT","STEEM","STORJ","STR","STRAT","SYS","VIA","VTC","XCP","XEM","XMR","XPM","XRP","ZEC","ZRX"]
+	# Delisted coins: BTCD, BTM, EMC2, GRC, NEOS, POT, VRC, XBC
 	counter = 0 # Where to start in list (0=AMP, 1=ARDR, 2=BAT...)
 	max_index = len(PoloniexCoins) - 1 # Length of PoloniexCoins List = 62 Minus 1  List start at 0 not 1 
 	while counter <= max_index: # while = loop through PoloniexCoins List until max_index
