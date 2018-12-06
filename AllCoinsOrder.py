@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Run the script: python AllCoinsOrder.py 0.005 
+# Run the script: python AllCoinsFunctions.py 0.005 
 # Where 0.005 is the BTC Value for each Altcoin 
 # Script by BitcoinDaytraderChannel@gmail.com
 # Youtube.com/c/BitcoinDaytrader
@@ -18,63 +18,64 @@ from poloniex import Poloniex
 
 try: # First check for user BTC Value input
 	budget = str(sys.argv[1])#.format('0.005')
-	print(" #################")
-	print(" # Budget=", budget , "#")	
-	print(" #################")
 except: # Print an Exeption (error) if there is no input
-	print("put Budget in as python AllCoinsOrder.py 0.005")
+	print("put Budget in as python AllCoinsFunctions.py 0.005")
 	exit(1)
 
-def backoff(msg): # Function for the Error Message later in script
-    print(msg)
-    time.sleep(0.1)
-				
 while True: # Setup to connect to Poloniex API
 	try:
 		polo = Poloniex()
 		polo.key = 'Your_Poloniex_Key_Here'
 		polo.secret = 'Your_Poloniex_Secret_Here'
+		print(" ")
+		print("---!Connected to Poloniex.com!---")
 		break
 	except:
 		backoff("Can not connect to Poloniex API")
 		exit(1)
+		
+def backoff(msg): # Function for the Error Message later in script
+    print(msg)
+    time.sleep(0.1)
 
+def decor (func):
+	def wrap():
+		print(" #################")
+		func()
+		print(" #################")
+	return wrap
+
+@decor #send print_budget to decor function 
+def print_budget():
+	print(" # Budget=", budget , "#") # Show budget input
+@decor
+def print_pair():
+	print("# Market =", pair , "#") # Show name of Market
+			
 if __name__ == '__main__':	# Start the main BUY/SELL script
-	PoloniexCoins = ["AMP","ARDR","BAT","BCH","BCN","BTS","BURST","CLAM","CVC","DASH","DCR","DGB","DOGE","EOS","ETC","ETH","EXP","FCT","GAME","GAS","GNO","GNT","HUC","KNC","LBC","LOOM","LSK","LTC","MAID","NAV","NMC","NXT","OMG","OMNI","PASC","PPC","REP","SBD","SC","SNT","STEEM","STORJ","STR","STRAT","SYS","VIA","VTC","XCP","XEM","XMR","XPM","XRP","ZEC","ZRX"]
-	# Delisted coins: BTCD, BTM, EMC2, GRC, NEOS, POT, VRC, XBC
+	print_budget();
+	PoloniexCoins = ["ARDR","BAT","BCHABC","BCHSV","BCN","BNT","BTS","BURST","CLAM","CVC","DASH","DCR","DGB","DOGE","EOS","ETC","ETH","FCT","GAME","GAS","GNT","HUC","KNC","LBC","LOOM","LSK","LTC","MANA","MAID","NAV","NMC","NXT","OMG","OMNI","PASC","PPC","QTUM","REP","SBD","SC","SNT","STEEM","STORJ","STR","STRAT","SYS","VIA","VTC","XCP","XEM","XMR","XPM","XRP","ZEC","ZRX"]
+	# Delisted coins: BTCD, BTM, EMC2, GRC, NEOS, POT, VRC, XBC, GNO, EXP, AMP
 	counter = 0 # Where to start in list (0=AMP, 1=ARDR, 2=BAT...)
 	max_index = len(PoloniexCoins) - 1 # Length of PoloniexCoins List = 62 Minus 1  List start at 0 not 1 
+	print("Total amount of coins on Poloniex = " , len(PoloniexCoins))
 	while counter <= max_index: # while = loop through PoloniexCoins List until max_index
 		AltCoin = PoloniexCoins[counter] # Every loop change variable AltCoin to counter (0=AMP, 1=ARDR, 2=BAT...)
 		pair = "BTC_" + AltCoin # variable to create coinpairs (BTC_AMP , BTC_ARDR, BTC_BAT...)
-		print(" ######################")
-		print("# MarketName =", pair , "#") # Show name of Market
-		print(" ######################")		
+		print_pair();
 
 		while True: #0 First check if the coinpair already has a Open Order & Cancel it
 			try:
 				returnOpenOrders = polo.returnOpenOrders()[pair] # Collect the open orders of the coinpair			
-				if returnOpenOrders != []: # if the openorders are not empty
-					# Input to Cancel OpenOrder
+				if returnOpenOrders != []: # if the openorders are not empty Cancel the Order
 					returnOrderNumber = polo.returnOpenOrders()[pair][0]['orderNumber'] # Collect last orderNumber	
 					returnOrderAmount = polo.returnOpenOrders()[pair][0]['amount'] # Collect OrderAmount
 					print("Open Order: ", returnOrderNumber, "Total Amount in BTC: " , returnOrderAmount ) # OpenOrder Info
-					print("Do you want to Cancel the Orders?")
-					print("y or n")
-					user_input = input(": ") # Wait for User Imput to Cancel Order
-					if user_input == "n": # no to continue the script
-						break
-					elif user_input == "y":# yes to cancel
-						cancelOrder = polo.cancelOrder(returnOrderNumber)# cancel order with latest orderNumber
-						print("---!CANCEL Complete!---") # Reloop the OpenOrder Check						
-					else:
-						print("input y or n") # Error Wrong input
-						print(" ")
+					cancelOrder = polo.cancelOrder(returnOrderNumber)# cancel order with latest orderNumber
+					print("---!CANCEL Complete!---") # Reloop the OpenOrder Check						
 				else: # if the openorders are not empty
-					print("---!No OpenOrders!---")
-					break
-			
-				
+					#print("---!No OpenOrders!---")
+					break				
 			except: # Print an Exeption (error) if script can't collect Orders
 				backoff("Can not get the OpenOrder")
 				exit(1) # Exit the entire script
@@ -123,12 +124,11 @@ if __name__ == '__main__':	# Start the main BUY/SELL script
 					print("AltBuyWorth in btc = " , AltBuyWorth)
 					AltBuy = float(AltBuyWorth) / float(Ask) # Calculate how much AltCoins to Buy
 					AltSellWorth = 100 # To fix error when not defined in => #5 Orderbook
-					break # stop else loop
-					
+					break # stop else loop					
 			except:
 				backoff("The Order does not work, Maybe to small") # Error if can't calculate
 				exit(1)
-		print(" ")		
+		
 		while True: #5 get the orderbook of the coinpair (All Sell & Buy Orders)
 			try:
 				MinOrder = 0.0001 # Minimal order worth in BTC = Poloniex Trading Rule
@@ -140,27 +140,17 @@ if __name__ == '__main__':	# Start the main BUY/SELL script
 					break # stop elseif loop	 			
 				else: # run the buy/sell part if order is not to small							
 					if float(AltWorth) >= float(budget): # SELL!!! Compare SellOrder with Available Bids
-						print("**SELL** AltWorth HIGHER budget")						
+						#print("**SELL** AltWorth HIGHER budget")						
 						OrderBidsPrice0  = polo.returnOrderBook()[pair]['bids'][0][0] # Collect highest buyorder (0) price
 						OrderBidsAmount0 = polo.returnOrderBook()[pair]['bids'][0][1] # Collect highest buyorder (0) amount
 						OrderBidsSum0 = float(OrderBidsAmount0) * float(OrderBidsPrice0) # Calculate highest buyorder BTC Value
 						
 						if float(AltSellWorth) <= float(OrderBidsSum0): # Sell if highest bid (in BTC) is bigger than AltSellWorth (in BTC)
-							# Sell to the highest bid (0)
-							print("Do you want to SELL? y or n") 
-							user_input = input(": ") # Wait for user input to sell
-							if user_input == "n":
-								break # input = No so continue Script 
-							elif user_input == "y":
-								sell = polo.sell(pair, Bid, AltSell) # Make the SellOrder
-								print("---!SELL Complete!--- fitted in first Bid")
-								break
-							else:
-								print("input y or n") # Error Wrong input
-								print(" ")
-							
+							sell = polo.sell(pair, Bid, AltSell) # Make the SellOrder
+							print("---!SELL Complete!--- fitted in first Bid")
+							break
 						else: # Highest BuyOrder (0) is to small, Calculate for 1st & 2nd BuyOrder (0&1)
-							print("My AltSELL Order is Bigger than BidsSum0")
+							print("Order is Bigger than BidsSum0")
 							OrderBidsPrice1  = polo.returnOrderBook()[pair]['bids'][1][0] # Collect 2nd highest buyorder (1) price
 							OrderBidsAmount1 = polo.returnOrderBook()[pair]['bids'][1][1] # Collect 2nd highest buyorder (1) amount
 							OrderBidsSum1 = float(OrderBidsAmount1) * float(OrderBidsPrice1) # Calculate 2nd highest buyorder BTC Value
@@ -180,74 +170,31 @@ if __name__ == '__main__':	# Start the main BUY/SELL script
 									OrderBidsSum3 = float(OrderBidsAmount3) * float(OrderBidsPrice3) # Calculate 4th highest buyorder BTC Value
 									OrderBidsSum0123 = float(OrderBidsSum012) + float(OrderBidsSum3) # Calculate 1st 2nd 3rd & 4th highest buyorders BTC Value
 									# Sell to the highest 4 bids (buyorders 0,1,2&3)
-									print("Do you want to SELL? y or n")
-									user_input = input(": ") # Wait for user input to sell
-									if user_input == "n":
-										break # input = No so continue Script 
-									elif user_input == "y":
-										print("---!SELL 0 Complete!--- fitted in First Bid")
-										print("---!SELL 1 Complete!--- fitted in Second Bid")
-										print("---!SELL 2 Complete!--- fitted in Third Bid")
-										sell = polo.sell(pair, OrderBidsPrice3, AltSell)  # Make the SellOrder
-										print("---!SELL 3 Complete!--- fitted in Fourth Bid")										
-										break
-									else:
-										print("input y or n") # Error Wrong input
-										print(" ")									
-																	
+									sell = polo.sell(pair, OrderBidsPrice3, AltSell)  # Make the SellOrder
+									print("---!SELL Complete!--- fitted in Fourth Bid")										
+									break							
 								else: # Sell to the highest 3 bids (BuyOrders 0,1&2)
-									print("Do you want to SELL? y or n")
-									user_input = input(": ") # Wait for user input to sell
-									if user_input == "n":
-										break # input = No so continue Script
-									elif user_input == "y":
-										print("---!SELL 0 Complete!--- fitted in First Bid")
-										print("---!SELL 1 Complete!--- fitted in Second Bid")
-										sell = polo.sell(pair, OrderBidsPrice2, AltSell) # Make the SellOrder
-										print("---!SELL 2 Complete!--- fitted in Third Bid")										
-										break
-									else:
-										print("input y or n") # Error Wrong input
-										print(" ")																	
-									
-							else: # Sell to the highest 2 bids (BuyOrders 0&1)
-								#Input for Sell 0&1
-								print("Do you want to SELL? y or n")
-								user_input = input(": ") # Wait for user input to sell
-								if user_input == "n":
-									break # input = No so continue Script
-								elif user_input == "y":
-									print("---!SELL 0 Complete!--- fitted in First Bid")
-									sell = polo.sell(pair, OrderBidsPrice1, AltSell) # Make the SellOrder
-									print("---!SELL 1 Complete!--- fitted in Second Bid")										
+									sell = polo.sell(pair, OrderBidsPrice2, AltSell) # Make the SellOrder
+									print("---!SELL Complete!--- fitted in Third Bid")										
 									break
-								else:
-									print("input y or n") # Error Wrong input
-									print(" ")																	
-																				
-						break # End SELL part					
+									
+							else: # Sell to the highest 2 bids (BuyOrders 0&1)						
+								sell = polo.sell(pair, OrderBidsPrice1, AltSell) # Make the SellOrder
+								print("---!SELL Complete!--- fitted in Second Bid")										
+								break																																			
+						break # End SELL part (if float(AltWorth) >= float(budget):)				
 					else: # BUY!!! Compare BuyOrder with Available Asks (same Logic as SELL part where sell=buy & bid=ask)
-						print("**BUY** AltWorth LOWER budget")
+						#print("**BUY** AltWorth LOWER budget")
 						OrderAsksPrice0  = polo.returnOrderBook()[pair]['asks'][0][0]
 						OrderAsksAmount0 = polo.returnOrderBook()[pair]['asks'][0][1]
 						OrderAsksSum0 = float(OrderAsksAmount0) * float(OrderAsksPrice0)
 						
-						if float(AltBuyWorth) <= float(OrderAsksSum0): #Order the OrderBook0 
-							#Input for Buy
-							print("Do you want to BUY? y or n")
-							user_input = input(": ") 
-							if user_input == "n":
-								break
-							elif user_input == "y":								
-								buy = polo.buy(pair, Ask, AltBuy)
-								print("---!Buy Complete!--- fitted in first Ask")
-								break
-							else:
-								print("input y or n")
-								print(" ")
-							
+						if float(AltBuyWorth) <= float(OrderAsksSum0): #Order the OrderBook0 							
+							buy = polo.buy(pair, Ask, AltBuy)
+							print("---!Buy Complete!--- fitted in first Ask")
+							break
 						else: #OrderBook0 to small Calculate for Order 0&1
-							print("My AltBUY Order is Bigger than AsksSum0")
+							print("Order is Bigger than AsksSum0")
 							OrderAsksPrice1  = polo.returnOrderBook()[pair]['asks'][1][0]
 							OrderAsksAmount1 = polo.returnOrderBook()[pair]['asks'][1][1]
 							OrderAsksSum1 = float(OrderAsksAmount1) * float(OrderAsksPrice1)
@@ -266,53 +213,18 @@ if __name__ == '__main__':	# Start the main BUY/SELL script
 									OrderAsksAmount3 = polo.returnOrderBook()[pair]['asks'][3][1]
 									OrderAsksSum3 = float(OrderAsksAmount3) * float(OrderAsksPrice3)
 									OrderAsksSum0123 = float(OrderAsksSum012) + float(OrderAsksSum3)
-									#Input for Buy 012&3 
-									print("Do you want to BUY? y or n")
-									user_input = input(": ") 
-									if user_input == "n":
-										break
-									elif user_input == "y":
-										print("---!BUY 0 Complete!--- fitted in First Bid")
-										print("---!BUY 1 Complete!--- fitted in Second Bid")
-										print("---!BUY 2 Complete!--- fitted in Third Bid")
-										buy = polo.buy(pair, OrderAsksPrice3, AltBuy)
-										print("---!BUY 3 Complete!--- fitted in Fourth Bid")										
-										break
-									else:
-										print("input y or n")
-										print(" ")																	
-									break
-								
+
+									buy = polo.buy(pair, OrderAsksPrice3, AltBuy)
+									print("---!BUY Complete!--- fitted in Fourth Bid")										
+									break								
 								else: #Order the Orderbook 01&2
-									#Input for Buy 01&2 
-									print("Do you want to BUY? y or n")
-									user_input = input(": ") 
-									if user_input == "n":
-										break
-									elif user_input == "y":
-										print("---!BUY 0 Complete!--- fitted in First Bid")
-										print("---!BUY 1 Complete!--- fitted in Second Bid")
-										buy = polo.buy(pair, OrderAsksPrice2, AltBuy)
-										print("---!BUY 2 Complete!--- fitted in Third Bid")										
-										break
-									else:
-										print("input y or n")
-										print(" ")																	
-									break									
+									buy = polo.buy(pair, OrderAsksPrice2, AltBuy)
+									print("---!BUY Complete!--- fitted in Third Bid")										
+									break
+									
 							else: #Order the Orderbook 0&1
-								#Input for Buy 01&2 
-								print("Do you want to BUY? y or n")
-								user_input = input(": ") 
-								if user_input == "n":
-									break
-								elif user_input == "y":
-									print("---!BUY 0 Complete!--- fitted in First Bid")
-									buy = polo.buy(pair, OrderAsksPrice1, AltBuy)
-									print("---!BUY 1 Complete!--- fitted in Second Bid")										
-									break
-								else:
-									print("input y or n")
-									print(" ")								
+								buy = polo.buy(pair, OrderAsksPrice1, AltBuy)
+								print("---!BUY Complete!--- fitted in Second Bid")										
 								break																			
 							break
 						break # end BUY part						
