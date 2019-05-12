@@ -55,10 +55,10 @@ def print_pair():
 			
 if __name__ == '__main__':	# Start the main BUY/SELL script
 	print_budget();
-	PoloniexCoins = ["ARDR","BAT","BCHABC","BCHSV","BCN","BNT","BTS","BURST","CLAM","CVC","DASH","DCR","DGB","DOGE","EOS","ETC","ETH","FCT","FOAM","GAME","GAS","GNT","HUC","KNC","LBC","LOOM","LSK","LTC","MANA","MAID","NAV","NMC","NXT","OMG","OMNI","PASC","PPC","QTUM","REP","SBD","SC","SNT","STEEM","STORJ","STR","STRAT","SYS","VIA","VTC","XCP","XEM","XMR","XPM","XRP","ZEC","ZRX"]
+	PoloniexCoins = ["ARDR","ATOM","BAT","BCHABC","BCHSV","BCN","BNT","BTS","CLAM","CVC","DASH","DCR","DGB","DOGE","EOS","ETC","ETH","FCT","FOAM","GAME","GAS","GNT","GRIN","KNC","LBC","LOOM","LPT","LSK","LTC","MANA","MAID","NAV","NMR","NXT","OMG","OMNI","PASC","POLY","QTUM","REP","SC","SNT","STEEM","STORJ","STR","STRAT","VIA","VTC","XEM","XMR","XPM","XRP","ZEC","ZRX"]
 	counter = 0 # Where to start in list (0=AMP, 1=ARDR, 2=BAT...)
 	max_index = len(PoloniexCoins) - 1 # Length PoloniexCoins List - 1  List start at 0 not 1 
-	print("Total amount of Altcoins on Poloniex BTC Market = " , len(PoloniexCoins))
+	print("Total amount of Altcoins on Poloniex BTC Market = " , max_index)
 	while counter <= max_index: # while = loop through PoloniexCoins List until max_index
 		AltCoin = PoloniexCoins[counter] # Every loop change variable AltCoin to counter (0=AMP, 1=ARDR, 2=BAT...)
 		pair = "BTC_" + AltCoin # Market: BTC_ + AltCoin to create coinpairs (BTC_AMP , BTC_ARDR, BTC_BAT...)
@@ -171,15 +171,7 @@ if __name__ == '__main__':	# Start the main BUY/SELL script
 									OrderBidsSum0123 = float(OrderBidsSum012) + float(OrderBidsSum3) # Calculate 1st 2nd 3rd & 4th highest buyorders BTC Value
 									# Sell to the highest 4 bids (buyorders 0,1,2&3)
 									sell = polo.sell(pair, OrderBidsPrice3, AltSell)  # Make the SellOrder									
-									returnOpenOrders = polo.returnOpenOrders()[pair] # Collect the open orders of the coinpair			
-									if returnOpenOrders != []: # if the openorders are not empty Cancel the Order
-										returnOrderNumber = polo.returnOpenOrders()[pair][0]['orderNumber'] # Collect last orderNumber	
-										returnOrderAmount = polo.returnOpenOrders()[pair][0]['amount'] # Collect OrderAmount
-										print("---!SELL Not Complete!---")
-										print("Open Order: ", returnOrderNumber, "Total Amount in BTC: " , returnOrderAmount ) # OpenOrder Info					
-									else: # if the openorders are not empty
-										print("---!SELL Complete!--- fitted in Fourth Bid")
-										break										
+									print("---!SELL Complete!--- fitted in Fourth Bid")										
 									break							
 								else: # Sell to the highest 3 bids (BuyOrders 0,1&2)
 									sell = polo.sell(pair, OrderBidsPrice2, AltSell) # Make the SellOrder
@@ -222,15 +214,7 @@ if __name__ == '__main__':	# Start the main BUY/SELL script
 									OrderAsksSum3 = float(OrderAsksAmount3) * float(OrderAsksPrice3)
 									OrderAsksSum0123 = float(OrderAsksSum012) + float(OrderAsksSum3)
 									buy = polo.buy(pair, OrderAsksPrice3, AltBuy)
-									returnOpenOrders = polo.returnOpenOrders()[pair] # Collect the open orders of the coinpair			
-									if returnOpenOrders != []: # if the openorders are not empty Cancel the Order
-										returnOrderNumber = polo.returnOpenOrders()[pair][0]['orderNumber'] # Collect last orderNumber	
-										returnOrderAmount = polo.returnOpenOrders()[pair][0]['amount'] # Collect OrderAmount
-										print("---!BUY Not Complete!---")
-										print("Open Order: ", returnOrderNumber, "Total Amount in BTC: " , returnOrderAmount ) # OpenOrder Info					
-									else: # if the openorders are not empty
-										print("---!BUY Complete!--- fitted in Fourth Bid")
-										break										
+									print("---!BUY Complete!--- fitted in Fourth Bid")										
 									break								
 								else: #Order the Orderbook 01&2
 									buy = polo.buy(pair, OrderAsksPrice2, AltBuy)
@@ -250,4 +234,3 @@ if __name__ == '__main__':	# Start the main BUY/SELL script
 		
 		print(" ")
 		counter = counter + 1
-
