@@ -55,7 +55,7 @@ def print_pair():
 			
 if __name__ == '__main__':	# Start the main BUY/SELL script
 	print_budget();
-	PoloniexCoins = ["ARDR","ATOM","BAT","BCHABC","BCHSV","BCN","BNT","BTS","CLAM","CVC","DASH","DCR","DGB","DOGE","EOS","ETC","ETH","FCT","FOAM","GAME","GAS","GNT","GRIN","KNC","LBC","LOOM","LPT","LSK","LTC","MANA","MAID","NAV","NMR","NXT","OMG","OMNI","PASC","POLY","QTUM","REP","SC","SNT","STEEM","STORJ","STR","STRAT","VIA","VTC","XEM","XMR","XPM","XRP","ZEC","ZRX"]
+	PoloniexCoins = ["ARDR","ATOM","BAT","BCHABC","BCHSV","BCN","BNT","BTS","CVC","DASH","DCR","DGB","DOGE","EOS","ETC","ETH","FCT","FOAM","GAS","GNT","GRIN","KNC","LOOM","LPT","LSK","LTC","MANA","MAID","NMR","NXT","OMG","OMNI","POLY","QTUM","REP","SC","SNT","STORJ","STR","STRAT","VIA","VTC","XEM","XMR","XPM","XRP","ZEC","ZRX"]
 	counter = 0 # Where to start in list (0=AMP, 1=ARDR, 2=BAT...)
 	max_index = len(PoloniexCoins) - 1 # Length PoloniexCoins List - 1  List start at 0 not 1 
 	print("Total amount of Altcoins on Poloniex BTC Market = " , max_index)
