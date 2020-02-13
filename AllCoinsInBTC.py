@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Before running this script you need to
+# Before running this script you need to make sure the COINLIST (ln 58) is up to date.
 # 1) Install Python 3 (select add to PATH)
 # 2) Type in CMD: python -m pip install --upgrade pip
 # 3) Type in CMD: pip3 install https://github.com/s4w3d0ff/python-poloniex/archive/v0.4.7.zip
@@ -55,7 +55,7 @@ def print_pair():
 			
 if __name__ == '__main__':	# Start the main BUY/SELL script
 	print_budget();
-	PoloniexCoins = ["ARDR","ATOM","BAT","BCHABC","BCHSV","BCN","BNT","BTS","CVC","DASH","DCR","DGB","DOGE","EOS","ETC","ETH","FCT","FOAM","GAS","GNT","GRIN","KNC","LOOM","LPT","LSK","LTC","MANA","MAID","NMR","NXT","OMG","OMNI","POLY","QTUM","REP","SC","SNT","STORJ","STR","STRAT","VIA","VTC","XEM","XMR","XPM","XRP","ZEC","ZRX"]
+	PoloniexCoins = ["ARDR","ATOM","BAT","BCHABC","BCHSV","BCN","BNT","BTS","BTT","CVC","DASH","DCR","DOGE","EOS","ETC","ETH","ETHBNT","FOAM","GAS","GNT","GRIN","KNC","LOOM","LPT","LSK","LTC","MANA","NMR","NXT","OMG","POLY","QTUM","REP","SC","SNT","STORJ","STR","STRAT","TRX","XEM","XMR","XRP","ZEC","ZRX"]
 	counter = 0 # Where to start in list (0=AMP, 1=ARDR, 2=BAT...)
 	max_index = len(PoloniexCoins) - 1 # Length PoloniexCoins List - 1  List start at 0 not 1 
 	print("Total amount of Altcoins on Poloniex BTC Market = " , max_index)
