@@ -1,3 +1,7 @@
+--!! when signing up for Poloniex  !!--
+# --!! Use Referal code F8GSBSS5 !!-- 
+--!! to safe 10% on transaction costs !!--
+
 # PoloniexTradeBot
 Script to automatically buy/sell altcoins to a certain BTC Value
 
