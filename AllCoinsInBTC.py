@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# --!! when signing up for Poloniex !!--
+# --!! Use Referral code F8GSBSS5 !!--
+# --!! to safe 10% on transaction costs !!--
 # Before running this script you need to make sure the COINLIST (ln 58) is up to date.
 # 1) Install Python 3 (select add to PATH)
 # 2) Type in CMD: python -m pip install --upgrade pip
