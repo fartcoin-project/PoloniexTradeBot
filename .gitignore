@@ -1,2 +1,27 @@
-.env
+# See http://help.github.com/ignore-files/ for more about ignoring files.
+
+*.env
 *config.py
+
+# compiled output
+/.idea
+/build
+/dist
+/poloniex.egg-info
+/venv
+/venv2
+
+# dependencies
+/node_modules
+
+# IDEs and editors
+/tmp
+/out-tsc
+.project
+.classpath
+.c9/
+.settings/
+
+# System Files
+.DS_Store
+Thumbs.db
