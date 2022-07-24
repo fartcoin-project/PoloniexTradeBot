@@ -17,7 +17,8 @@ Script to automatically buy/sell altcoins to a certain BTC Value
 #    or download and unzip the PoloniexTradeBot-master.zip  and enter the folder
 #    cd  PoloniexTradeBot-master
 # 6) Install the poloniex library: python.exe setup.py install
-# 7) Create config.py from config.py.sample: 'Your_Poloniex_Key' & 'Your_Poloniex_Secret'
+#              PIP install config: pip install config
+# 7) Create config.py from config.py.sample with 'Your_Poloniex_Key' & 'Your_Poloniex_Secret'
 # 8) Run the script: python PoloniexTradebot.py 0.001
 ```
 
