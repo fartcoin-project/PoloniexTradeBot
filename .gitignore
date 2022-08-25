@@ -27,3 +27,4 @@ config.py.sample
 # System Files
 .DS_Store
 Thumbs.db
+/env/
