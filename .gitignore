@@ -1,15 +1,16 @@
 # See http://help.github.com/ignore-files/ for more about ignoring files.
 
 *.env
-*config.py
+tradebot_config.py
+PoloniexTradebot-0.1.py
+config.py.sample
 
 # compiled output
-/.idea
 /build
 /dist
-/poloniex.egg-info
 /venv
-/venv2
+/json
+/orderbooks
 
 # dependencies
 /node_modules
@@ -21,6 +22,7 @@
 .classpath
 .c9/
 .settings/
+/.idea
 
 # System Files
 .DS_Store
