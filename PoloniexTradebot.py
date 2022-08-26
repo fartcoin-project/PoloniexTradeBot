@@ -1,7 +1,6 @@
 #! python3
 # coding=utf-8
 import time
-
 import json
 import os
 import sys
@@ -17,6 +16,7 @@ while True:  # First check for user BTC Value input
         print("Input Budget: python PoloniexTradebot.py 0.0001")
         budget = 0.0005
 
+
 while True:  # Setup to connect to Poloniex API
     try:
         polo = ccxt.poloniex({
@@ -24,15 +24,6 @@ while True:  # Setup to connect to Poloniex API
             'secret': tradebot_config.SECRET_API_SECRET,
             'options': {'createMarketBuyOrderRequiresPrice': False}
         })
-        print(" ")
-        print('            |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| ')
-        print("            |   Connected to Poloniex.com   | ")
-        fetch_info = polo.fetch_balance()['info'][0]['accountId']
-        print('            |  AccountId', fetch_info, ' | ')
-        print('            |   pip install --upgrade ccxt  | ')
-        print('            | poloniex.com/signup?c=F8GSBSS5| ')
-        print('            |                               | ')
-        print('             ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ')
         break
     except ConnectionError:
         print("Can not connect to Poloniex API")
@@ -45,6 +36,22 @@ def decor(func):
         func()
         print(" ---------------------------------------------------------------")
     return wrap
+
+
+def welcome():
+            print("     don't forget to update CCXT every once and a while")
+            print("                pip install --upgrade ccxt")
+            print(" ")
+            print('            |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| ')
+            print("            |   Connected to Poloniex.com     | ")
+            fetch_info = polo.fetch_balance()['info'][0]['accountId']
+            print('            |  AccountId', fetch_info, '   | ')
+            print('            |                                 | ')
+            print('            |    ', C.F.gr , 'support with referral', C.rst , '    | ')
+            print('            |          ', C.F.gr , 'F8GSBSS5', C.rst , '           | ')
+            print('             ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ')
+
+
 
 
 @decor
@@ -68,9 +75,8 @@ def logo():
 def menu_list():
     print('            |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾|')
     print('            |  1: start_bot                 |')
-    print('            |  2: collect_orders            |')
-    print('            |  3: order_list                |')
-    print('            |  4: options                   |')
+    print('            |                               |')
+    print('            |  2: options                   |')
     print('            |  0: exit_tradebot             |')
     print('             ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ')
 
@@ -79,9 +85,7 @@ def menu():
     menu_list()
     menuchoices = {
         1: start_bot,
-        2: collect_orders,
-        3: order_list,
-        4: options,
+        2: options,
         0: exit_tradebot
     }
     print(' ')
@@ -144,13 +148,13 @@ def options():
 
 
 def exit_tradebot():
-    print("    ______  __ __   ____  ____   __  _      __ __   ___   __ __  ")
+    print(C.F.bl, "   ______  __ __   ____  ____   __  _      __ __   ___   __ __  ")
     print("   |      ||  |  | /    ||    \ |  |/ ]    |  |  | /   \ |  |  | ")
     print("   |      ||  |  ||  o  ||  _  ||  ' /     |  |  ||     ||  |  | ")
     print("   |_|  |_||  _  ||     ||  |  ||    \     |  ~  ||  O  ||  |  | ")
     print("     |  |  |  |  ||  _  ||  |  ||     \    |___, ||     ||  :  | ")
     print("     |  |  |  |  ||  |  ||  |  ||  .  |    |     ||     ||     | ")
-    print("     |__|  |__|__||__|__||__|__||__|\_|    |____/  \___/  \__,_| ")
+    print("     |__|  |__|__||__|__||__|__||__|\_|    |____/  \___/  \__,_| ", C.rst)
     exit(1)
 
 
@@ -369,7 +373,7 @@ def advice(show=False):
     btc_balance = total_balance()
     input_advice = round((btc_balance * 0.8) / (max_index + 1), 5)
     btc_balance = total_balance()
-    print("             Poloniex has   : ", max_index + 1, "Bitcoin markets")
+    print("              Poloniex has   : ", max_index + 1, "Bitcoin markets")
     print("              BTC available :  ₿ %.8f" % btc_balance)
     if show:
         print("              budget  input :  ₿ %.5f" % budget)
@@ -688,6 +692,7 @@ def print_format_table():
 
 if __name__ == "__main__":
     logo()
+    welcome()
     get_update()
     advice(True)
     menu()
