@@ -1,19 +1,23 @@
 # See http://help.github.com/ignore-files/ for more about ignoring files.
 
 *.env
-tradebot_config.py
-PoloniexTradebot-0.1.py
-config.py.sample
+/backend/tradebot/tradebot_config.py
+/settings/django_config.py
+json2sqlite.py
+backend.iml
+/Json2sqlite2Json.py
+/tradebot/json/
+/tradebot/orderbooks/
 
 # compiled output
 /build
 /dist
-/venv
-/json
-/orderbooks
+backend/tradebot/json
+backend/tradebot/orderbooks
 
 # dependencies
 /node_modules
+/venv
 
 # IDEs and editors
 /tmp
@@ -21,10 +25,17 @@ config.py.sample
 .project
 .classpath
 .c9/
-.settings/
-/.idea
+/idea
+
 
 # System Files
 .DS_Store
 Thumbs.db
-/env/
+
+
+
+
+/backend/tradebot/config.json
+/backend/db.sqlite3
+/backend/settings/db.sqlite3
+/backend/settings/django_config.py
