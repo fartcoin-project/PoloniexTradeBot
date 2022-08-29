@@ -27,7 +27,7 @@ while True:  # Setup to connect to Poloniex API
 parser = argparse.ArgumentParser()
 parser.add_argument("-b", "--budget", required=False, help="for ₿ 0.0001 Budget = 1 ")
 parser.add_argument("-m", "--mode", required=False)
-parser.add_argument("log", type=bool, default=False, help="extra log print in console")
+parser.add_argument("log", type=bool, nargs='?', default=False, help="extra log print in console")
 args = parser.parse_args()
 argv = sys.argv[1:]
 
