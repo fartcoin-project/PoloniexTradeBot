@@ -1,21 +1,16 @@
 #! python3
 # coding=utf-8
+from __future__ import print_function
+import re
 import time
+import argparse
+from time import sleep
 import json
 import os
 import sys
 import ccxt
 import tradebot_config
 from datetime import datetime
-
-while True:  # First check for user BTC Value input
-    try:
-        budget = float(sys.argv[1])  # .format('0.0005')
-        break
-    except ValueError:  # Print an Exception (error) if there is no input
-        print("Input Budget: python PoloniexTradebot.py 0.0001")
-        budget = 0.0005
-
 
 while True:  # Setup to connect to Poloniex API
     try:
@@ -29,122 +24,160 @@ while True:  # Setup to connect to Poloniex API
         print("Can not connect to Poloniex API")
         exit(1)
 
+parser = argparse.ArgumentParser()
+parser.add_argument("-b", "--budget", required=False, help="for ₿ 0.0001 Budget = 1 ")
+parser.add_argument("-m", "--mode", required=False)
+parser.add_argument("log", type=bool, default=False, help="extra log print in console")
+args = parser.parse_args()
+argv = sys.argv[1:]
 
-def decor(func):
-    def wrap():
-        print(" ---------------------------------------------------------------")
-        func()
-        print(" ---------------------------------------------------------------")
-    return wrap
+
+class C:
+    rst = '\033[0m'
+    bold = '\033[01m'
+    disable = '\033[02m'
+    underline = '\033[04m'
+    reverse = '\033[07m'
+    strikethrough = '\033[09m'
+    invisible = '\033[08m'
+
+    class F:
+        blk = '\033[30m'
+        rd = '\033[31m'
+        gr = '\033[32m'
+        orng = '\033[33m'
+        bl = '\033[34m'
+        prpl = '\033[35m'
+        cyn = '\033[36m'
+        gry = '\033[37m'
+        dgry = '\033[90m'
+        lrd = '\033[91m'
+        lgr = '\033[92m'
+        yel = '\033[93m'
+        lbl = '\033[94m'
+        pnk = '\033[95m'
+        lcyn = '\033[96m'
+
+    class B:
+        blk = '\033[40m'
+        rd = '\033[41m'
+        gr = '\033[42m'
+        orng = '\033[43m'
+        bl = '\033[44m'
+        prpl = '\033[45m'
+        cyn = '\033[46m'
+        lgry = '\033[47m'
+
+
+class ProgressBar(object):
+    DEFAULT = 'Progress: %(bar)s %(percent)3d%%'
+    FULL = '%(bar)s %(current)d/%(total)d'  # (%(percent)3d%%) %(remaining)d to go
+
+    def __init__(self, total, width=25, fmt=DEFAULT, symbol='=',
+                 output=sys.stderr):
+        assert len(symbol) == 1
+
+        self.total = total
+        self.width = width
+        self.symbol = symbol
+        self.output = output
+        self.fmt = re.sub(r'(?P<name>%\(.+?\))d',
+                          r'\g<name>%dd' % len(str(total)), fmt)
+
+        self.current = 0
+
+    def __call__(self):
+        percent = self.current / float(self.total)
+        size = int(self.width * percent)
+        remaining = self.total - self.current
+        bar = '   [' + self.symbol * size + ' ' * (self.width - size) + ']'
+
+        args = {
+            'total': self.total,
+            'bar': bar,
+            'current': self.current,
+            'percent': percent * 100,
+            'remaining': remaining
+        }
+        print('\r' + self.fmt % args, file=self.output, end='')
+
+    def done(self):
+        self.current = self.total
+        self()
+        print('', file=self.output)
+
+
+def logo():
+    print(C.F.gr,
+          "       ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾")
+    print("        ____       _             _ ")
+    print("       |  _ \ ___ | | ___  _ __ (_) _____  __ ")
+    print("       | |_) / _ \| |/ _ \| '_ \| |/ _ \ \/ / ")
+    print("       |  __/ (_) | | (_) | | | | |  __/>  < ")
+    print("       |_|   \___/|_|\___/|_| |_|_|\___/_/\_\ ")
+    print("               _____              _      _           _ ")
+    print("              |_   _| __ __ _  __| | ___| |__   ___ | |_ ")
+    print("                | || '__/ _` |/ _` |/ _ \ '_ \ / _ \| __| ")
+    print("                | || | | (_| | (_| |  __/ |_) | (_) | |_ ")
+    print("                |_||_|  \__,_|\__,_|\___|_.__/ \___/ \__| ")
+    print("     ")
+    print("       ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ", C.rst)
 
 
 def welcome():
-            print("     don't forget to update CCXT every once and a while")
-            print("                pip install --upgrade ccxt")
-            print(" ")
-            print('            |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| ')
-            print("            |   Connected to Poloniex.com     | ")
-            fetch_info = polo.fetch_balance()['info'][0]['accountId']
-            print('            |  AccountId', fetch_info, '   | ')
-            print('            |                                 | ')
-            print('            |    ', C.F.gr , 'support with referral', C.rst , '    | ')
-            print('            |          ', C.F.gr , 'F8GSBSS5', C.rst , '           | ')
-            print('             ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ')
+    print("     don't forget to update CCXT every once and a while")
+    print("                pip install --upgrade ccxt")
+    print(" ")
+    print('            |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| ')
+    print("            |   Connected to Poloniex.com     | ")
+    fetch_info = polo.fetch_balance()['info'][0]['accountId']
+    print('            |  AccountId', fetch_info, '   | ')
+    print('            |                                 | ')
+    print('            |    ', C.F.gr, 'support with referral', C.rst, '    | ')
+    print('            |          ', C.F.gr, 'F8GSBSS5', C.rst, '           | ')
+    print('             ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ')
 
 
+def get_inputs():
+    while True:  # First check for user BTC Value input
+        try:
+            with open('config.json', 'r') as configfile:
+                loadconfig = json.load(configfile)
+
+            if args.budget is not None:
+                budget_arg = f'{args.budget}'
+                budget_in = float(budget_arg) / 10000  # 1.5 = ₿ 0.0001,5
+                loadconfig[0]["mybudget"] = "%.8f" % budget_in
+
+            else:
+                print('tradebot.py --budget 2.' + C.disable + '50', C.rst)
+                print('         == > ₿ 0.0002,' + C.disable + '50', C.rst)
+                print("              ₿ 0.0001 ---> 1 ")
+                budget_input = float(input('                     Input: ')) / 10000
+                loadconfig[0]["mybudget"] = budget_input
+            with open('config.json','w') as jsonfile:
+                json.dump(loadconfig, jsonfile, indent=4) # you decide the indentation level
+            break
+        except(ValueError, IndexError):  # Print an Exception (error) if there is no input
+            print("Print an Exception (error)")
+            break
 
 
-@decor
-def logo():
-
-    print(C.F.gr,
-          "      _____      _             _                   ")
-    print("      |  __ \    | |           (_)                  ")
-    print("      | |__) |__ | | ___  _ __  _  _____  __        ")
-    print("      |  ___/ _ \| |/ _ \| '_ \| |/ _ \ \/ /        ")
-    print("      | |  | (_) | | (_) | | | | |  __/>  <         ")
-    print("      |_|  _\___/|_|\___/|_| |_|_|\___/_/\_\     _      ")
-    print("          |__   __|          | |    | |         | |     ")
-    print("             | |_ __ __ _  __| | ___| |__   ___ | |_    ")
-    print("             | | '__/ _` |/ _` |/ _ \ '_ \ / _ \| __|   ")
-    print("             | | | | (_| | (_| |  __/ |_) | (_) | |_    ")
-    print("             |_|_|  \__,_|\__,_|\___|_.__/ \___/ \__|   ", C.rst)
-
-
-@decor
-def menu_list():
-    print('            |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾|')
-    print('            |  1: start_bot                 |')
-    print('            |                               |')
-    print('            |  2: options                   |')
-    print('            |  0: exit_tradebot             |')
-    print('             ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ')
-
-
-def menu():
-    menu_list()
-    menuchoices = {
-        1: start_bot,
-        2: options,
-        0: exit_tradebot
-    }
-    print(' ')
-    try:
-        menuitem = int(input('                 Please input menu choice: '))
-        if menuitem < 9:
-            menuchoices[menuitem]()
-        else:
-            print(' ')
-            print("          Something went wrong! Call the police!")
-            print(' ')
-            menu()
-    except (KeyError, ValueError):
-        print("          Something went wrong! Enter an option number!")
-        menu()
-
-
-@decor
-def options_list():
-    print('            |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾|')
-    print('            |  All functions                |')
-    print('            |  1: getUpdate                 |')
-    print('            |  2: market_list               |')
-    print('            |  3: listed                    |')
-    print('            |  4: makePoloniexCoins         |')
-    print('            |  5: total_balance             |')
-    print('            |  6: get_open_orders           |')
-    print('            |  7: collect_orders            |')
-    print('            |  8: order_list                |')
-    print('            |  9: Color test                |')
-    print('             ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ')
-
-
-def options():
-    options_list()
-    options_choices = {
-        1: get_update,
-        2: market_list,
-        3: listed,
-        4: make_poloniex_coins,
-        5: total_balance,
-        6: get_open_orders,
-        7: collect_orders,
-        8: order_list,
-        9: print_format_table,
-        0: exit_tradebot
-    }
-    print(' ')
-    menuitem = int(input('                 Please choose option: '))
-    if 0 < menuitem < 10:
-        if menuitem is (5 or 8 or 7):
-            options_choices[menuitem](True)
-        else:
-            options_choices[menuitem]()
-    else:
-        print(' ')
-        print("          Something went wrong! Call the police!")
-        print(' ')
-        menu()
+def completed():
+    print(C.F.gr, "         ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾")
+    print("            _    _ _   _____              _ ")
+    print("           / \  | | | |_   _| __ __ _  __| | ___  ___ ")
+    print("          / _ \ | | |   | || '__/ _` |/ _` |/ _ \/ __| ")
+    print("         / ___ \| | |   | || | | (_| | (_| |  __/\__ \ ")
+    print("        /_/   \_\_|_|   |_||_|  \__,_|\__,_|\___||___/ ")
+    print("          ____                      _      _           _ ")
+    print("         / ___|___  _ __ ___  _ __ | | ___| |_ ___  __| | ")
+    print("        | |   / _ \| '_ ` _ \| '_ \| |/ _ \ __/ _ \/ _` | ")
+    print("        | |__| (_) | | | | | | |_) | |  __/ ||  __/ (_| | ")
+    print("         \____\___/|_| |_| |_| .__/|_|\___|\__\___|\__,_| ")
+    print("                             |_| ")
+    print("         ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ", C.rst)
+    exit_tradebot()
 
 
 def exit_tradebot():
@@ -158,50 +191,57 @@ def exit_tradebot():
     exit(1)
 
 
-def start_bot():
-    market_list()
-    listed()
-    make_poloniex_coins()
-    collect_orders()
-    order_list(True)
+def get_update(show=False):  # 1
+    print("")
+    if not os.path.exists('./json'):
+        os.makedirs('./json', exist_ok=False)
+        if args.log: print("               Created the Json directory!")
+    if not os.path.exists('./orderbooks'):
+        os.makedirs('./orderbooks', exist_ok=False)
+        if args.log: print("               Created the Orderbook directory!")
+    if not os.path.exists('config.json'):
+        configlist = []
+        now = get_time(True)
+        item = {"time": now,
+                "mybudget": "STRING",
+                "mybalance": "0.00000000",
+                "advice": "0.00069",
+                }
+        configlist.append(item)
+        with open("config.json", 'w') as configfile:  # open file in write mode
+            json.dump(configlist, configfile)
+        if args.log: print("               Created the config.json")
 
-
-def get_update():  # 1
-    pathjson = './json'
-    jsonExist = os.path.exists(pathjson)
-    pathbook = './orderbooks'
-    bookExist = os.path.exists(pathbook)
-
-    if not jsonExist:
-        os.makedirs(pathjson, exist_ok=False)
-        print("               Created the Json directory!")
-    if not bookExist:
-        os.makedirs(pathbook, exist_ok=False)
-        print("               Created the Orderbook directory!")
+    update_progress(0 / 100.0)
     while True:
         try:
             fetch_markets = polo.fetch_markets()
             with open("json/poloniex_markets.json", "w") as outfile:
                 json.dump(fetch_markets, outfile, sort_keys=True, separators=(',', ':'))
-            print(C.disable, '            json/poloniex_markets.json               saved')
+            if show or args.log: print(C.disable, "{:>30}".format('poloniex_markets.json'), '    saved', C.rst)
+            update_progress(10 / 100.0)
 
             polo_currencies = polo.fetch_currencies()
             with open("json/poloniex_currencies.json", "w") as outfile:
                 json.dump(polo_currencies, outfile, sort_keys=True, separators=(',', ':'))
-            print('             json/poloniex_currencies.json            saved')
+            if show or args.log: print(C.disable, "{:>30}".format(' poloniex_currencies.json'), '    saved', C.rst)
+            update_progress(20 / 100.0)
 
             polo_fetch = polo.fetch_balance()
             with open("json/poloniex_balances_full.json", "w") as outfile:
                 json.dump(polo_fetch, outfile, sort_keys=True, separators=(',', ':'))
-            print('             json/poloniex_balances_full.json         saved')
+            if show or args.log: print(C.disable, "{:>30}".format(' poloniex_balances_full.json'), '    saved', C.rst)
+            update_progress(30 / 100.0)
 
             polo_tickers = polo.fetch_tickers()
             with open("json/poloniex_tickers.json", "w") as outfile:
                 json.dump(polo_tickers, outfile, sort_keys=True, separators=(',', ':'))
-            print('             json/poloniex_tickers.json               saved')
+            if show or args.log: print(C.disable, "{:>30}".format(' poloniex_tickers.json'), '    saved', C.rst)
+            update_progress(40 / 100.0)
 
             with open('json/poloniex_balances_full.json', 'r') as openfile:  # Opening JSON file
                 balance_full = json.load(openfile)['info'][0]['balances']  # Reading from json file
+            update_progress(50 / 100.0)
             break
         except TimeoutError:
             print("             An TimeoutError occurred, please retry")
@@ -215,14 +255,15 @@ def get_update():  # 1
         available = balance_full[counter]['available']
         myBalances.append(currency + ' ' + available)
         counter = counter + 1
-
+    update_progress(90 / 100.0)
     res = dict()  # create new dictionary to fill
     for sub in myBalances:
         key, *val = sub.split()  # split() for key
         res[key] = val  # packing value list
     with open("json/poloniex_balances.json", "w") as outfile:
         json.dump(res, outfile, sort_keys=True, separators=(',', ':'))
-    print('             json/poloniex_balances.json              saved', C.rst)
+    if show or args.log: print(C.disable, "{:>30}".format(' poloniex_balances.json'), '    saved', C.rst)
+    update_progress(100 / 100.0)
     return ()
 
 
@@ -241,6 +282,9 @@ def market_list():  # 2
     with open("json/poloniex_live_market.txt", 'w') as outfile:  # open file in write mode
         for market in live_market:
             outfile.write("%s\n" % market)  # write each item on a new line
+    if args.log:
+        print("           All the live_Markets")
+        print(live_market)
     print('   All live markets as json/poloniex_live_market.txt  saved')
     Btc_Markets = []
     for x in sorted(live_market):
@@ -249,6 +293,9 @@ def market_list():  # 2
     with open("json/poloniex_Btc_Markets.txt", 'w') as outfile:  # open file in write mode
         for pair in Btc_Markets:
             outfile.write("%s\n" % pair)  # write each item on a new line
+    if args.log:
+        print("           All the Btc_Markets")
+        print(Btc_Markets)
     print('   All _BTC markets as json/poloniex_Btc_Markets.txt  saved')
     listed()
 
@@ -265,6 +312,8 @@ def listed():  # 3
     with open("json/poloniex_ListedCoins.txt", 'w') as outfile:  # open file in write mode
         for coins in ListedCoins:
             outfile.write("%s\n" % coins)  # write each item on a new line
+    if args.log:
+        print(ListedCoins)
     print('   All listed coins as json/poloniex_ListedCoins.txt  saved')
     make_poloniex_coins()
 
@@ -296,6 +345,8 @@ def make_poloniex_coins():  # 4
     with open("json/poloniex_btc_pairs.txt", 'w') as outfile:  # open file in write mode
         for coin in PoloniexCoinlist:
             outfile.write("%s\n" % coin)  # write each item on a new line
+        if args.log:
+            print(PoloniexCoinlist)
         print('        BTC markets as json/  poloniex_btc_pairs.txt  saved')
     total_balance()
 
@@ -338,8 +389,8 @@ def total_balance(show=False):
     wallet = 0.0
     btcfree = float(balances.get("BTC")[0])
     wallet = wallet + btcfree
-    if show:
-        print("{:>8}".format("BTC"), "{:>16}".format(" %.8f" % btcfree))
+    if show or args.log:
+        print("{:>20}".format("BTC"), "  ====>",  "{:>14}".format("₿ %.8f" % btcfree))
     counter = 0
     max = len(Coins) - 1
     while counter <= max:
@@ -349,45 +400,47 @@ def total_balance(show=False):
             LastPrice = float((tickers[pair]['last']))
             amount = balances.get(x)[0]
             altTotal = float(LastPrice) * float(amount)
-            if show:
-                print(f"{x:>8}", "{:>16}".format(" %.8f" % altTotal))
+            if show or args.log:
+                print(f"{x:>20}", "  ====>", "{:>14}".format("₿ %.8f" % altTotal))
             wallet = wallet + altTotal
         else:
             altTotal = float(0.0)
             wallet = wallet + altTotal
         counter = counter + 1
-    if show:
-        print("         total btc available: ", wallet)
-        options()
-    else:
-        return (wallet)
+    if show or args.log:
+        print("        total btc available:   ₿ %.8f" % wallet)
+    with open('config.json', 'r') as configfile:
+        loadconfig = json.load(configfile)
+        print(loadconfig)
+    loadconfig[0]["mybalance"] = "%.8f" % wallet
+    with open('config.json','w') as jsonfile:
+        json.dump(loadconfig, jsonfile, indent=4)
 
 
-def advice(show=False):
+def advice():
     PoloniexCoins = []
     with open("json/poloniex_btc_pairs.txt", 'r') as openBtcpair:  # Get list from a local file
         for line in openBtcpair:  # remove linebreak from a current name
             x = line[:-1]
             PoloniexCoins.append(x)
     max_index = len(PoloniexCoins) - 1
-    btc_balance = total_balance()
-    input_advice = round((btc_balance * 0.8) / (max_index + 1), 5)
-    btc_balance = total_balance()
-    print("              Poloniex has   : ", max_index + 1, "Bitcoin markets")
-    print("              BTC available :  ₿ %.8f" % btc_balance)
-    if show:
-        print("              budget  input :  ₿ %.5f" % budget)
-        if budget < input_advice:
-            print("          max budget advice :", C.F.gr, "₿ %.5f" % input_advice, C.rst)
-        else:
-            print("          max budget advice :", C.F.rd, "₿ %.5f" % input_advice, C.rst)
-    else:
-        return input_advice
+    with open('config.json', 'r') as configfile:
+        loadconfig = json.load(configfile)
+    btc_balance = float(loadconfig[0]["mybalance"])
+    input_advice = round((btc_balance * 0.8) / (max_index + 1), 6)
+    budg = str("%.6f" % loadconfig[0]["mybudget"])
+    print("             Poloniex has   : ", max_index + 1, "Bitcoin markets")
+    print("             BTC available  :  ₿ %.8f" % btc_balance)
+    print("              budget input  :  ₿ " + budg[:6] + C.disable + budg[6:], C.rst)
+
+    loadconfig[0]["advice"] = input_advice
+    with open('config.json','w') as jsonfile:
+        json.dump(loadconfig, jsonfile, indent=4) # you decide the indentation level
 
 
 def collect_orders(show=False):
     global item, orderPrint
-    market = 'LIMIT' # LIMIT_MAKER - MARKET
+    market = 'LIMIT'  # LIMIT_MAKER - MARKET
     PoloniexCoins = []
     with open("json/poloniex_btc_pairs.txt", 'r') as openBtcpair:  # Get list from a local file
         for line in openBtcpair:  # remove linebreak from a current name
@@ -397,12 +450,16 @@ def collect_orders(show=False):
         balances = json.load(openBalances)
     with open('json/poloniex_tickers.json', 'r') as openTickers:
         tickers = json.load(openTickers)
-
+    with open('config.json', 'r') as configfile:
+        loadconfig = json.load(configfile)
+    budget = loadconfig[0]["mybudget"]
     counter = 0
     max_index = len(PoloniexCoins) - 1
+    progress = ProgressBar(max_index, fmt=ProgressBar.FULL)
     orderlist = []
     while counter <= max_index:  # while = loop through PoloniexCoins List until max_index
-        AltCoin = PoloniexCoins[counter]  # Every loop change variable AltCoin to counter (0=AMP, 1=ARDR, 2=BAT...)
+        progress()
+        AltCoin = PoloniexCoins[counter]  # Every loop change variable AltCoin
         symbol = str(AltCoin + "/BTC")
         pair = str(AltCoin + "_BTC")
         if AltCoin in balances:
@@ -422,6 +479,8 @@ def collect_orders(show=False):
         Ask = Asks[0][0]  # Collect latest Sell(ask) prices
         Bids = orderbook['bids']  # [[Amount, Price],[...]]
         Bid = Bids[0][0]  # Collect latest Buy (bid) prices
+        if args.log:
+            print("         latest prices Sell(ask)", Ask, "Buy(bid)", Bid)
         while True:  # Check if the AltWorth is Higher or Lower than Budget (script-input)
             try:
                 if float(AltWorth) >= float(budget):  # Higher = SELL
@@ -446,52 +505,52 @@ def collect_orders(show=False):
         while True:
             try:
                 MinOrder = 0.0001  # Minimal order worth in BTC = Poloniex Trading Rule
-                if MinOrder > OrderWorth:  # Compare MinOrder with AltSellWorth
-                    print(C.disable, "          ---! ", AltCoin, "Order To Small To Place !---", C.rst)
-                    break  # stop if loop
-                else:  # Show
-                    i = 0
-                    if show:
-                        print("")
-                        print("  |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾", "{:<11}".format(pair), "OrderBook ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| ")
-                        print("  | Amount", "{:<7}".format(AltCoin), "      ₿ Buy  - Sell ₿               ",
-                              "{:<7}".format(AltCoin), "|")
-                    while i <= 4:
-                        try:
-                            askPrice = float(Asks[i][0])
-                            askAmount = float(Asks[i][1])
-                            askAvailable = (askPrice * askAmount)
-                        except IndexError:
-                            askAvailable = 0
-                            askPrice = 0
-                        try:
-                            bidPrice = float(Bids[i][0])
-                            bidAmount = float(Bids[i][1])
-                            bidAvailable = (bidPrice * bidAmount)
-                        except IndexError:
-                            bidAvailable = 0
-                            bidPrice = 0
-                        if show:
-                            print("  | %.8f" % askAvailable, "==> ₿ %.8f" % askPrice, "- ₿ %.8f" % bidPrice,
-                                  " <== %.8f" % bidAvailable, " |")
-                        i = i + 1
+                if MinOrder < OrderWorth:  # Compare MinOrder with AltSellWorth
+                    print(C.disable, "  [", "{:<7}".format(AltCoin), "Too Small ]", C.rst)
+                    if args.log:
+                        break
 
-                    if show:
-                        print("   ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ")
-                        print('             orderbooks/' + pair + '.json               saved')
-                        print("{:19}".format("   got %.4f" % AltTotal, "@price"), "{:11}".format(pair), headline)
-                        print("               " + "{:<7}".format(AltCoin) + " are Worth: ₿ %.8f" % AltWorth)
-                    if side == "BUY":
-                        print(C.F.rd, "           lost", "{:<7}".format(AltCoin), " Buy = ₿ %.8f" % OrderWorth, C.rst)
-                    elif side == "SELL":
-                        print(C.F.gr, "         profit", "{:<7}".format(AltCoin), "Sell = ₿ %.8f" % OrderWorth, C.rst)
-                    else:
-                        print(orderPrint)
+                i = 0
+                if show or args.log:
+                    print("")
+                    print("  |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾", "{:<11}".format(pair), "OrderBook ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| ")
+                    print("  | Amount", "{:<7}".format(AltCoin), "      ₿ Buy  - Sell ₿               ",
+                          "{:<7}".format(AltCoin), "|")
+                while i <= 4:
+                    try:
+                        askPrice = float(Asks[i][0])
+                        askAmount = float(Asks[i][1])
+                        askAvailable = (askPrice * askAmount)
+                    except IndexError:
+                        askAvailable = 0
+                        askPrice = 0
+                    try:
+                        bidPrice = float(Bids[i][0])
+                        bidAmount = float(Bids[i][1])
+                        bidAvailable = (bidPrice * bidAmount)
+                    except IndexError:
+                        bidAvailable = 0
+                        bidPrice = 0
+                    if show or args.log:
+                        print("  | %.8f" % askAvailable, "==> ₿ %.8f" % askPrice, "- ₿ %.8f" % bidPrice,
+                              " <== %.8f" % bidAvailable, " |")
+                    i = i + 1
 
-                    break
+                if show or args.log:
+                    print("   ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ")
+                    print('             orderbooks/' + pair + '.json               saved')
+                    print("{:19}".format("   got %.4f" % AltTotal, "@price"), "{:11}".format(pair), headline)
+                    print("               " + "{:<7}".format(AltCoin) + " are Worth: ₿ %.8f" % AltWorth)
+                if side == "BUY":
+                    print(C.F.rd, "  ", "{:<7}".format(AltCoin), " Buy = ₿ %.8f" % OrderWorth, C.rst)
+                elif side == "SELL":
+                    print(C.F.gr, "  ", "{:<7}".format(AltCoin), "Sell = ₿ %.8f" % OrderWorth, C.rst)
+                else:
+                    print(orderPrint)
+
+                break
             except IndexError:
                 print(" Orderbook smaller than 5")
-
         while True:  # 5 get the orderbook of the coinpair (All Sell & Buy Orders)
             try:
                 if MinOrder > OrderWorth:
@@ -500,7 +559,7 @@ def collect_orders(show=False):
                     order = float(0.0)
                     i = 0
                     price = 0.0
-                    if show:
+                    if show or args.log:
                         print("   _________________", side, "OrderBook ___________________ ")
                     while order <= OrderWorth:
                         try:
@@ -508,13 +567,14 @@ def collect_orders(show=False):
                             amount = float(List[i][1])
                             available = (price * amount)
                             order = order + available
-                            if show:
-                                print("  |   (", i + 1, ") %.8f" % available, AltCoin, "    for    ₿ %.8f" % price, "   |")
+                            if show or args.log:
+                                print("  |   (", i + 1, ") %.8f" % available, AltCoin, "    for    ₿ %.8f" % price,
+                                      "   |")
                             i = i + 1
                         except IndexError:
                             break
                     total = AltAmount * price
-                    if show:
+                    if show or args.log:
                         print("   ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ")
                         print("        Order will use ", i, " available orders")
                         print("")
@@ -534,7 +594,8 @@ def collect_orders(show=False):
                                     "alt": AltCoin,
                                     "time": now
                                     }
-                            # polo.create_order(symbol, market, side, AltAmount, price)
+                            if show or args.log:
+                                print(item)
                             break
                         else:
                             item = {"symbol": symbol,
@@ -547,7 +608,8 @@ def collect_orders(show=False):
                                     "alt": AltCoin,
                                     "time": now
                                     }
-                            # polo.create_order(symbol, market, side, AltAmount, price)
+                            if show or args.log:
+                                print(item)
                             break
                     except ValueError:
                         print("error")
@@ -561,10 +623,16 @@ def collect_orders(show=False):
                 print("        ---! Can not finish the OrderBook !---")
                 print("")
                 break
+
+        progress.current += 1
+        sleep(0.001)
         counter = counter + 1
+    progress.done()
     with open("json/orderlist.json", "w") as orderlistFile:
         json.dump(orderlist, orderlistFile, separators=(',', ':'))
     print('             json/orderlist.json                      saved')
+    with open("json/prev_order.json", "a") as prevOrderFile:
+        json.dump(orderlist, prevOrderFile)
 
 
 def order_list(place=False):
@@ -599,20 +667,19 @@ def order_list(place=False):
                 try:
                     if side == "BUY":
                         polo.create_order(symbol, tradetype, side, amount, price)
-                        status = "Complete"
+                        status = "| "+C.F.rd+"Complete"+C.rst+"  |"
                         trade_amount = "{:>16}".format(" %.8f" % amount)
                     else:
                         polo.create_order(symbol, tradetype, side, amount, price)
-                        status = "Complete"
+                        status =  "| "+C.F.gr+"Complete"+C.rst+"  |"
                         trade_amount = "{:>16}".format(" %.8f" % quantity)
 
-                except:
+                except ValueError:
                     status = "INCOMPLETE"
                     trade_amount = "{:>16}".format(" %.8f" % amount)
         else:
             status = "---"
             trade_amount = "{:>16}".format(" %.8f" % amount)
-
 
         print(f"{side:>8}",
               trade_amount,
@@ -622,7 +689,7 @@ def order_list(place=False):
               status)
         time.sleep(0.1)
         nr = nr + 1
-    menu()
+    completed()
 
 
 def get_time(time_list=False):
@@ -639,43 +706,6 @@ def string2list(string):
     return li
 
 
-class C:
-    rst = '\033[0m'
-    bold = '\033[01m'
-    disable = '\033[02m'
-    underline = '\033[04m'
-    reverse = '\033[07m'
-    strikethrough = '\033[09m'
-    invisible = '\033[08m'
-
-    class F:
-        blk = '\033[30m'
-        rd = '\033[31m'
-        gr = '\033[32m'
-        orng = '\033[33m'
-        bl = '\033[34m'
-        prpl = '\033[35m'
-        cyn = '\033[36m'
-        gry = '\033[37m'
-        dgry = '\033[90m'
-        lrd = '\033[91m'
-        lgr = '\033[92m'
-        yel = '\033[93m'
-        lbl = '\033[94m'
-        pnk = '\033[95m'
-        lcyn = '\033[96m'
-
-    class B:
-        blk = '\033[40m'
-        rd = '\033[41m'
-        gr = '\033[42m'
-        orng = '\033[43m'
-        bl = '\033[44m'
-        prpl = '\033[45m'
-        cyn = '\033[46m'
-        lgry = '\033[47m'
-
-
 def print_format_table():
     print(C.B.gr, "testo", C.F.rd, "pesto", C.rst)
     print("pesta", C.F.cyn, "pasta", C.rst)
@@ -690,9 +720,129 @@ def print_format_table():
     options()
 
 
+def update_progress(progress):
+    barLength = 33  ## A value at 1 or bigger represents 100%
+    status = ""
+    if isinstance(progress, int):
+        progress = float(progress)
+    if not isinstance(progress, float):
+        progress = 0
+        status = "error: progress var must be float\r\n"
+    if progress < 0:
+        progress = 0
+        status = "Halt...\r\n"
+    if progress >= 1:
+        progress = 1
+        status = "Done...\r\n"
+    block = int(round(barLength * progress))
+    text = "\r  Updating: [{0}] {1}% {2}".format("#" * block + "-" * (barLength - block), progress * 100, status)
+    sys.stdout.write(text)
+    sys.stdout.flush()
+
+
+def menu():
+    print('            |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾|')
+    print('            |  1: start bot (automatic)     |')
+    print('            |  2: update markets            |')
+    print('            |  3: total_balance             |')
+    print('            |  4: collect_orders            |')
+    print('            |  5: order_list                |')
+    print('            |                               |')
+    print('            |  9: extra  option             |')
+    print('            |  0: exit tradebot             |')
+    print('             ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ')
+    menuchoices = {
+        1: start_bot,
+        2: get_update,
+        3: total_balance,
+        4: collect_orders,
+        5: order_list,
+        9: options,
+        0: exit_tradebot
+    }
+    print(' ')
+    try:
+        menuitem = int(input('                 Please input menu choice: '))
+        if menuitem < 9:
+            if menuitem == 3 or menuitem == 4:
+                menuchoices[menuitem](True)
+            else:
+                menuchoices[menuitem]()
+        else:
+            print(' ')
+            print("          Something went wrong! Call the police!")
+            print(' ')
+            menu()
+    except (KeyError, ValueError):
+        print("          Something went wrong! Enter an option number!")
+        menu()
+
+
+def options():
+    print('            |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾|')
+    print('            |  All functions                |')
+    print('            |  1: getUpdate                 |')
+    print('            |  2: market_list               |')
+    print('            |  3: listed                    |')
+    print('            |  4: makePoloniexCoins         |')
+    print('            |  5: get_open_orders           |')
+    print('            |  6: Color test                |')
+    print('             ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ')
+    options_choices = {
+        1: get_update,
+        2: market_list,
+        3: listed,
+        4: make_poloniex_coins,
+        5: total_balance,
+        6: get_open_orders,
+        7: collect_orders,
+        8: order_list,
+        9: print_format_table,
+        0: exit_tradebot
+    }
+    print(' ')
+    menuitem = int(input('                 Please choose option: '))
+    if menuitem < 10:
+        if menuitem == 5 or menuitem == 8 or menuitem == 7:
+            options_choices[menuitem](True)
+        else:
+            options_choices[menuitem]()
+    else:
+        print(' ')
+        print("          Something went wrong! Call the police!")
+        print(' ')
+        menu()
+
+
+def start_bot():
+    market_list()
+    listed()
+    make_poloniex_coins()
+    collect_orders()
+    order_list(True)
+
+
 if __name__ == "__main__":
+
     logo()
     welcome()
     get_update()
-    advice(True)
-    menu()
+    with open('config.json', 'r') as configfile:
+        loadconfig = json.load(configfile)
+    budget = loadconfig[0]["mybudget"]
+    get_inputs()
+
+
+    if args.mode == "run":
+        start_bot()
+    else:
+        advice()
+        advice = loadconfig[0]["advice"]
+        adv = str("%.6f" % advice)
+        if budget < advice:
+            print("          advice 80% of btc :", C.F.gr,
+                  "₿", adv[:6] + C.rst + C.disable + adv[6:], C.rst)
+        else:
+            print("          advice 80% of btc :", C.F.rd,
+                  "₿", adv[:6] + C.rst + C.disable + adv[6:], C.rst)
+        menu()
