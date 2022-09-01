@@ -34,40 +34,40 @@ argv = sys.argv[1:]
 
 
 class C:
-    rst = '\033[0m'
-    bold = '\033[01m'
-    disable = '\033[02m'
-    underline = '\033[04m'
-    reverse = '\033[07m'
-    strikethrough = '\033[09m'
-    invisible = '\033[08m'
+    rst = '\033[0;0m'
+    bold = '\033[1;01m'
+    disable = '\033[1;02m'
+    underline = '\033[1;04m'
+    reverse = '\033[1;07m'
+    strikethrough = '\033[1;09m'
+    invisible = '\033[1;08m'
 
     class F:
-        blk = '\033[30m'
-        rd = '\033[31m'
-        gr = '\033[32m'
-        orng = '\033[33m'
-        bl = '\033[34m'
-        prpl = '\033[35m'
-        cyn = '\033[36m'
-        gry = '\033[37m'
-        dgry = '\033[90m'
-        lrd = '\033[91m'
-        lgr = '\033[92m'
-        yel = '\033[93m'
-        lbl = '\033[94m'
-        pnk = '\033[95m'
-        lcyn = '\033[96m'
+        blk = '\033[1;30m'
+        rd = '\033[1;31m'
+        gr = '\033[1;32m'
+        orng = '\033[1;33m'
+        bl = '\033[1;34m'
+        prpl = '\033[1;35m'
+        cyn = '\033[1;36m'
+        gry = '\033[1;37m'
+        dgry = '\033[1;90m'
+        lrd = '\033[1;91m'
+        lgr = '\033[1;92m'
+        yel = '\033[1;93m'
+        lbl = '\033[1;94m'
+        pnk = '\033[1;95m'
+        lcyn = '\033[1;96m'
 
     class B:
-        blk = '\033[40m'
-        rd = '\033[41m'
-        gr = '\033[42m'
-        orng = '\033[43m'
-        bl = '\033[44m'
-        prpl = '\033[45m'
-        cyn = '\033[46m'
-        lgry = '\033[47m'
+        blk = '\033[1;40m'
+        rd = '\033[1;41m'
+        gr = '\033[1;42m'
+        orng = '\033[1;43m'
+        bl = '\033[1;44m'
+        prpl = '\033[1;45m'
+        cyn = '\033[1;46m'
+        lgry = '\033[1;47m'
 
 
 class ProgressBar(object):
@@ -148,14 +148,14 @@ def get_inputs():
             if args.budget is not None:
                 budget_arg = f'{args.budget}'
                 budget_in = float(budget_arg) / 10000  # 1.5 = ₿ 0.0001,5
-                loadconfig[0]["mybudget"] = "%.8f" % budget_in
+                loadconfig["mybudget"] = "%.8f" % budget_in
 
             else:
                 print('tradebot.py --budget 2.' + C.disable + '50', C.rst)
                 print('         == > ₿ 0.0002,' + C.disable + '50', C.rst)
                 print("              ₿ 0.0001 ---> 1 ")
                 budget_input = float(input('                     Input: ')) / 10000
-                loadconfig[0]["mybudget"] = budget_input
+                loadconfig["mybudget"] = budget_input
             with open('config.json','w') as jsonfile:
                 json.dump(loadconfig, jsonfile, indent=4) # you decide the indentation level
             break
@@ -201,16 +201,14 @@ def get_update(show=False):  # 1
         os.makedirs('./orderbooks', exist_ok=False)
         if args.log: print("               Created the Orderbook directory!")
     if not os.path.exists('config.json'):
-        configlist = []
         now = get_time(True)
         item = {"time": now,
-                "mybudget": "STRING",
+                "mybudget": "0.0005",
                 "mybalance": "0.00000000",
-                "advice": "0.00069",
+                "advice": "0.0001",
                 }
-        configlist.append(item)
         with open("config.json", 'w') as configfile:  # open file in write mode
-            json.dump(configlist, configfile)
+            json.dump(item, configfile)
         if args.log: print("               Created the config.json")
 
     update_progress(0 / 100.0)
@@ -256,7 +254,7 @@ def get_update(show=False):  # 1
         available = balance_full[counter]['available']
         myBalances.append(currency + ' ' + available)
         counter = counter + 1
-    update_progress(90 / 100.0)
+    update_progress(60 / 100.0)
     res = dict()  # create new dictionary to fill
     for sub in myBalances:
         key, *val = sub.split()  # split() for key
@@ -264,7 +262,7 @@ def get_update(show=False):  # 1
     with open("json/poloniex_balances.json", "w") as outfile:
         json.dump(res, outfile, sort_keys=True, separators=(',', ':'))
     if show or args.log: print(C.disable, "{:>30}".format(' poloniex_balances.json'), '    saved', C.rst)
-    update_progress(100 / 100.0)
+    update_progress(70 / 100.0)
     if show:
         menu()
     return ()
@@ -288,7 +286,9 @@ def market_list():  # 2
     if args.log:
         print("           All the live_Markets")
         print(live_market)
-    print('   All live markets as json/poloniex_live_market.txt  saved')
+        print('   All live markets as json/poloniex_live_market.txt  saved')
+    else:
+        update_progress(80 / 100.0)
     Btc_Markets = []
     for x in sorted(live_market):
         if "_BTC" in x:
@@ -299,7 +299,9 @@ def market_list():  # 2
     if args.log:
         print("           All the Btc_Markets")
         print(Btc_Markets)
-    print('   All _BTC markets as json/poloniex_Btc_Markets.txt  saved')
+        print('   All _BTC markets as json/poloniex_Btc_Markets.txt  saved')
+    else:
+        update_progress(90 / 100.0)
     listed()
 
 
@@ -317,7 +319,9 @@ def listed():  # 3
             outfile.write("%s\n" % coins)  # write each item on a new line
     if args.log:
         print(ListedCoins)
-    print('   All listed coins as json/poloniex_ListedCoins.txt  saved')
+        print('   All listed coins as json/poloniex_ListedCoins.txt  saved')
+    else:
+        update_progress(90 / 100.0)
     make_poloniex_coins()
 
 
@@ -350,7 +354,9 @@ def make_poloniex_coins():  # 4
             outfile.write("%s\n" % coin)  # write each item on a new line
         if args.log:
             print(PoloniexCoinlist)
-        print('        BTC markets as json/  poloniex_btc_pairs.txt  saved')
+            print('        BTC markets as json/  poloniex_btc_pairs.txt  saved')
+        else:
+            update_progress(100 / 100.0)
     total_balance()
 
 
@@ -414,7 +420,7 @@ def total_balance(show=False):
         print("        total btc available:   ₿ %.8f" % wallet)
     with open('config.json', 'r') as configfile:
         loadconfig = json.load(configfile)
-    loadconfig[0]["mybalance"] = "%.8f" % wallet
+    loadconfig["mybalance"] = "%.8f" % wallet
     with open('config.json','w') as jsonfile:
         json.dump(loadconfig, jsonfile, indent=4)
     if show:
@@ -430,15 +436,15 @@ def advice():
     max_index = len(PoloniexCoins) - 1
     with open('config.json', 'r') as configfile:
         loadconfig = json.load(configfile)
-    btc_balance = float(loadconfig[0]["mybalance"])
-    mybudget = float(loadconfig[0]["mybudget"])
+    btc_balance = float(loadconfig["mybalance"])
+    mybudget = float(loadconfig["mybudget"])
     input_advice = round((btc_balance * 0.8) / (max_index + 1), 6)
     budg = str("%.6f" % mybudget)
     print("             Poloniex has   : ", max_index + 1, "Bitcoin markets")
     print("             BTC available  :  ₿ %.8f" % btc_balance)
     print("              budget input  :  ₿ " + budg[:6] + C.disable + budg[6:], C.rst)
 
-    loadconfig[0]["advice"] = input_advice
+    loadconfig["advice"] = input_advice
     with open('config.json','w') as jsonfile:
         json.dump(loadconfig, jsonfile, indent=4) # you decide the indentation level
 
@@ -457,7 +463,7 @@ def collect_orders(show=False):
         tickers = json.load(openTickers)
     with open('config.json', 'r') as configfile:
         loadconfig = json.load(configfile)
-    budget = loadconfig[0]["mybudget"]
+    budget = loadconfig["mybudget"]
     counter = 0
     max_index = len(PoloniexCoins) - 1
     progress = ProgressBar(max_index, fmt=ProgressBar.FULL)
@@ -761,6 +767,16 @@ def update_progress(progress):
     sys.stdout.flush()
 
 
+def help_menu():
+    print("{:<59}".format("    |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾|"))
+    print("{:<59}".format("    | Possible arguments to include after tradebot.py "), "|")
+    print("{:<59}".format("    | -b  --budget  ==> for ₿ 0.0001 Budget input '-b 1' "), "|")
+    print("{:<59}".format("    | -e  --exclude ==> Input the coins to exclude from bot"), "|")
+    print("{:<59}".format("    | run             ==> no input, best with --budget"), "|")
+    print("{:<59}".format("    | log             ==> extra log print in console"), "|")
+    print("{:<59}".format("     ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ "))
+    print(" ")
+
 def menu():
     print('            |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾|')
     print('            |  1: start bot (automatic)     |')
@@ -770,7 +786,7 @@ def menu():
     print('            |  5: order_list                |')
     print('            |  6: Place the Order           |')
     print('            |                               |')
-    print('            |  9: extra  option             |')
+    print('            |  9: Help & Extras             |')
     print('            |  0: exit tradebot             |')
     print('             ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ')
     menuchoices = {
@@ -786,7 +802,7 @@ def menu():
     print(' ')
     try:
         menuitem = int(input('                 Please input menu choice: '))
-        if menuitem < 9:
+        if menuitem < 10:
             if  menuitem == 2 or menuitem == 3 or menuitem == 4 or menuitem == 6:
                 menuchoices[menuitem](True)
             else:
@@ -802,33 +818,22 @@ def menu():
 
 
 def options():
+    help_menu()
     print('            |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾|')
-    print('            |  All functions                |')
-    print('            |  1: getUpdate                 |')
-    print('            |  2: market_list               |')
-    print('            |  3: listed                    |')
-    print('            |  4: makePoloniexCoins         |')
-    print('            |  5: get_open_orders           |')
-    print('            |  6: Color test                |')
+    print('            |  Extra functions              |')
+    print('            |  1: get_open_orders           |')
+    print('            |  2: Color test                |')
+    print('            |  0: back                      |')
     print('             ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ')
     options_choices = {
-        1: get_update,
-        2: market_list,
-        3: listed,
-        4: make_poloniex_coins,
-        5: total_balance,
-        6: get_open_orders,
-        7: collect_orders,
-        8: order_list,
-        9: print_format_table,
-        0: exit_tradebot
+
+        1: get_open_orders,
+        2: print_format_table,
+        0: menu
     }
     print(' ')
     menuitem = int(input('                 Please choose option: '))
     if menuitem < 10:
-        if menuitem == 5 or menuitem == 8 or menuitem == 7:
-            options_choices[menuitem](True)
-        else:
             options_choices[menuitem]()
     else:
         print(' ')
@@ -849,16 +854,17 @@ if __name__ == "__main__":
     logo()
     welcome()
     get_update()
+    market_list()
     with open('config.json', 'r') as configfile:
         loadconfig = json.load(configfile)
-    budget = float(loadconfig[0]["mybudget"])
+    budget = float(loadconfig["mybudget"])
     get_inputs()
 
     if args.run:
         start_bot()
     else:
         advice()
-        advice = loadconfig[0]["advice"]
+        advice = float(loadconfig["advice"])
         adv = str("%.6f" % advice)
         if budget < advice:
             print("          advice 80% of btc :", C.F.gr,
