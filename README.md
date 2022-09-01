@@ -18,12 +18,22 @@ Script to automatically buy/sell altcoins to a certain BTC Value
 #               git clone https://github.com/fartcoin-project/PoloniexTradeBot.git
 #               cd  PoloniexTradeBot-master
 # 7) Create tradebot_config.py from tradebot_config.EXAMPLE.py with your Poloniex Key & Secret
-# 8) Run the script: python PoloniexTradebot.py
+# 8) Run the script: python tradebot.py
 ```
 
 Automatically trade to get the same BTC Value for each Altcoin in BTC market
 Script by BitcoinDaytraderChannel@gmail.com
 Youtube.com/c/BitcoinDaytrader
+
+### Possible arguments to include 
+#### tradebot.py run log --budget 1 --exclude COIN1 COIN2
+```
+   | -h  --help      ==> help menu                           | 
+   |   run           ==> no input, best with --budget        |
+   |   log           ==> extra log print in console          |
+   | -b  --budget    ==> for ₿ 0.0001 Budget input '-b 1'    | 
+   | -e  --exclude   ==> Input the coins to exclude from bot | 
+```
 
 #### keywords
 ```

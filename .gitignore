@@ -2,7 +2,6 @@
 
 *.env
 tradebot_config.py
-PoloniexTradebot-0.1.py
 config.py.sample
 
 # compiled output
@@ -11,6 +10,7 @@ config.py.sample
 /venv
 /json
 /orderbooks
+/backend
 
 # dependencies
 /node_modules
@@ -28,3 +28,5 @@ config.py.sample
 .DS_Store
 Thumbs.db
 /env/
+/backend/
+/config.json
