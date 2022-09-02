@@ -3,8 +3,13 @@
 # configs
 /backend/tradebot/config.json
 /backend/tradebot/tradebot_config.py
+/settings/django_config.py
+json2sqlite.py
+backend.iml
+/Json2sqlite2Json.py
+/tradebot/json/
+/tradebot/orderbooks/
 /backend/settings/django_config.py
-
 # compiled output
 /build
 /dist
@@ -31,11 +36,12 @@ backend/tradebot/orderbooks
 Thumbs.db
 
 
-
-
-
-
 /tradebot_config.py
 /config.json
 /orderbooks/
 /json/
+
+/backend/tradebot/config.json
+/backend/db.sqlite3
+/backend/settings/db.sqlite3
+/backend/settings/django_config.py
