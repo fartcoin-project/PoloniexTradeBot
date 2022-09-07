@@ -4,15 +4,13 @@ from __future__ import print_function
 import re
 import time
 import argparse
+from time import sleep
 import json
 import os
 import sys
 import ccxt
-from time import sleep
+import tradebot_config
 from datetime import datetime
-import tradebot_config  # rename: tradebot_config_EXAMPLE.py to tradebot_config.py
-
-
 
 while True:  # Setup to connect to Poloniex API
     try:
@@ -28,9 +26,9 @@ while True:  # Setup to connect to Poloniex API
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-b", "--budget", required=False, help="for ₿ 0.0001 Budget input '-b 1' ")
+parser.add_argument("-r", "--run", action=argparse.BooleanOptionalAction, help="run the bot without menu, best to input with --budget ")
 parser.add_argument("-e", "--exclude", nargs='*', required=False, help="Input the coins to exclude from bot")
-parser.add_argument("run", type=bool, nargs='?', default=False, help="run bot without input, best with --budget ")
-parser.add_argument("log", type=bool, nargs='?', default=False, help="extra log print in console")
+parser.add_argument("-l", "--log", action=argparse.BooleanOptionalAction, help="extra log print in console")
 args = parser.parse_args()
 argv = sys.argv[1:]
 
@@ -141,7 +139,7 @@ def welcome():
     print('             ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ')
 
 
-def get_inputs():
+def get_inputs(update=False):
     while True:  # First check for user BTC Value input
         try:
             with open('config.json', 'r') as configfile:
@@ -151,15 +149,18 @@ def get_inputs():
                 budget_arg = f'{args.budget}'
                 budget_in = float(budget_arg) / 10000  # 1.5 = ₿ 0.0001,5
                 loadconfig["mybudget"] = "%.8f" % budget_in
-
+                with open('config.json','w') as jsonfile:
+                    json.dump(loadconfig, jsonfile, indent=4)
+                if update: print("budget is given by argument --budget")
             else:
                 print('tradebot.py --budget 2.' + C.disable + '50', C.rst)
                 print('         == > ₿ 0.0002,' + C.disable + '50', C.rst)
                 print("              ₿ 0.0001 ---> 1 ")
                 budget_input = float(input('                     Input: ')) / 10000
                 loadconfig["mybudget"] = budget_input
-            with open('config.json','w') as jsonfile:
-                json.dump(loadconfig, jsonfile, indent=4) # you decide the indentation level
+                with open('config.json','w') as jsonfile:
+                    json.dump(loadconfig, jsonfile, indent=4)
+                if update: menu()
             break
         except(ValueError, IndexError):  # Print an Exception (error) if there is no input
             print("Print an Exception (error)")
@@ -470,7 +471,10 @@ def collect_orders(show=False):
     max_index = len(PoloniexCoins) - 1
     progress = ProgressBar(max_index, fmt=ProgressBar.FULL)
     orderlist = []
-    exclude = [name.upper() for name in args.exclude]
+    excludelist = []
+    if args.exclude is not None:
+        excludelist = args.exclude
+    exclude = [name.upper() for name in excludelist]
 
     while counter <= max_index:  # while = loop through PoloniexCoins List until max_index
         progress()
@@ -774,12 +778,16 @@ def help_menu():
     print("{:<59}".format("    | Possible arguments to include after tradebot.py "), "|")
     print("{:<59}".format("    | -b  --budget  ==> for ₿ 0.0001 Budget input '-b 1' "), "|")
     print("{:<59}".format("    | -e  --exclude ==> Input the coins to exclude from bot"), "|")
-    print("{:<59}".format("    | run           ==> no input, best with --budget"), "|")
-    print("{:<59}".format("    | log           ==> extra log print in console"), "|")
+    print("{:<59}".format("    | run             ==> no input, best with --budget"), "|")
+    print("{:<59}".format("    | log             ==> extra log print in console"), "|")
     print("{:<59}".format("     ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ "))
     print(" ")
 
 def menu():
+    with open('config.json', 'r') as configfile:
+        loadconfig = json.load(configfile)
+    print("\n\n             My budget:  %.8f" % loadconfig["mybudget"])
+
     print('            |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾|')
     print('            |  1: start bot (automatic)     |')
     print('            |  2: update markets            |')
@@ -788,6 +796,7 @@ def menu():
     print('            |  5: order_list                |')
     print('            |  6: Place the Order           |')
     print('            |                               |')
+    print('            |  8: Change Budget             |')
     print('            |  9: Help & Extras             |')
     print('            |  0: exit tradebot             |')
     print('             ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ')
@@ -798,6 +807,7 @@ def menu():
         4: collect_orders,
         5: order_list,
         6: order_list,
+        8: get_inputs,
         9: options,
         0: exit_tradebot
     }
@@ -805,7 +815,7 @@ def menu():
     try:
         menuitem = int(input('                 Please input menu choice: '))
         if menuitem < 10:
-            if  menuitem == 2 or menuitem == 3 or menuitem == 4 or menuitem == 6:
+            if  menuitem == 2 or menuitem == 3 or menuitem == 4 or menuitem == 6 or menuitem == 8:
                 menuchoices[menuitem](True)
             else:
                 menuchoices[menuitem]()
@@ -845,7 +855,7 @@ def options():
 
 
 def start_bot():
-    get_update(True)
+    get_update()
     market_list()
     collect_orders()
     order_list(True)

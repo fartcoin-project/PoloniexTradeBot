@@ -29,4 +29,5 @@ config.py.sample
 Thumbs.db
 /env/
 /backend/
+/front/
 /config.json
