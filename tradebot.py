@@ -211,7 +211,7 @@ def get_update(show=False):  # 1
                 "advice": "0.0001",
                 }
         with open("config.json", 'w') as configfile:  # open file in write mode
-            json.dump(item, configfile)
+            json.dump(item, configfile, indent=4)
         if args.log: print("               Created the config.json")
 
     update_progress(0 / 100.0)
@@ -219,25 +219,25 @@ def get_update(show=False):  # 1
         try:
             fetch_markets = polo.fetch_markets()
             with open("json/poloniex_markets.json", "w") as outfile:
-                json.dump(fetch_markets, outfile, sort_keys=True, separators=(',', ':'))
+                json.dump(fetch_markets, outfile, sort_keys=True, indent=4)
             if show or args.log: print(C.disable, "{:>30}".format('poloniex_markets.json'), '    saved', C.rst)
             update_progress(10 / 100.0)
 
             polo_currencies = polo.fetch_currencies()
             with open("json/poloniex_currencies.json", "w") as outfile:
-                json.dump(polo_currencies, outfile, sort_keys=True, separators=(',', ':'))
+                json.dump(polo_currencies, outfile, sort_keys=True, indent=4)
             if show or args.log: print(C.disable, "{:>30}".format(' poloniex_currencies.json'), '    saved', C.rst)
             update_progress(20 / 100.0)
 
             polo_fetch = polo.fetch_balance()
             with open("json/poloniex_balances_full.json", "w") as outfile:
-                json.dump(polo_fetch, outfile, sort_keys=True, separators=(',', ':'))
+                json.dump(polo_fetch, outfile, sort_keys=True, indent=4)
             if show or args.log: print(C.disable, "{:>30}".format(' poloniex_balances_full.json'), '    saved', C.rst)
             update_progress(30 / 100.0)
 
             polo_tickers = polo.fetch_tickers()
             with open("json/poloniex_tickers.json", "w") as outfile:
-                json.dump(polo_tickers, outfile, sort_keys=True, separators=(',', ':'))
+                json.dump(polo_tickers, outfile, sort_keys=True, indent=4)
             if show or args.log: print(C.disable, "{:>30}".format(' poloniex_tickers.json'), '    saved', C.rst)
             update_progress(40 / 100.0)
 
@@ -263,7 +263,7 @@ def get_update(show=False):  # 1
         key, *val = sub.split()  # split() for key
         res[key] = val  # packing value list
     with open("json/poloniex_balances.json", "w") as outfile:
-        json.dump(res, outfile, sort_keys=True, separators=(',', ':'))
+        json.dump(res, outfile, sort_keys=True, indent=4)
     if show or args.log: print(C.disable, "{:>30}".format(' poloniex_balances.json'), '    saved', C.rst)
     update_progress(70 / 100.0)
     if show:
@@ -491,7 +491,7 @@ def collect_orders(show=False):
         headline = str("  ₿ %.8f" % LastPrice)
         fetchorderbook = polo.fetch_order_book(pair, 5)
         with open("orderbooks/" + pair + ".json", "w") as outfile:
-            json.dump(fetchorderbook, outfile)
+            json.dump(fetchorderbook, outfile, indent=4)
         with open("orderbooks/" + pair + ".json", 'r') as openfile:
             orderbook = json.load(openfile)  # Reading from json file
         Asks = orderbook['asks']  # [[Price, Amount],[...]]
@@ -637,92 +637,96 @@ def collect_orders(show=False):
         counter = counter + 1
     progress.done()
     with open("json/orderlist.json", "w") as orderlistFile:
-        json.dump(orderlist, orderlistFile, separators=(',', ':'))
+        json.dump(orderlist, orderlistFile, indent=4)
     print('             json/orderlist.json                      saved')
     with open("json/prev_order.json", "a") as prevOrderFile:
-        json.dump(orderlist, prevOrderFile)
+        json.dump(orderlist, prevOrderFile, indent=4)
     if show:
         menu()
 
 
 def order_list(place=False):
-    global status, trade_amount
-    with open('json/orderlist.json', 'r') as openOrderlist:  # Opening JSON file
-        orders = json.load(openOrderlist)  # Reading from json file
-    nr = 0
-    max_index = len(orders) - 1
-    now = string2list(get_time(True))
-    now = [int(i) for i in now]
-    then = string2list(orders[len(orders) - 1]['time'])
-    then = [int(i) for i in then]
-    time_behind = list()
-    for i in range(len(now)):
-        item = now[i] - then[i]
-        time_behind.append(item)
-    lagg = ((time_behind[3] * 60 * 60) + (time_behind[4] * 60) + time_behind[5])
-    print("            orders: ", max_index + 1, "     list created", lagg, "seconds ago")
-    print("{:>9}".format("| Order"), "{:<22}".format("|       Amount "), "{:>12}".format("|    Price   "),
-          "{:>15}".format("|   Total     |"), " status")
-    incomplete = []
-    while nr <= max_index:  # while = loop through PoloniexCoins List until max_index
-        symbol = orders[nr]['symbol']
-        tradetype = orders[nr]['type']
-        side = orders[nr]['side']
-        amount = orders[nr]['AltAmount']
-        quantity = orders[nr]['quantity']
-        price = orders[nr]['price']
-        total = orders[nr]['total']
-        alt = orders[nr]['alt']
-        if place:
-            if lagg < 360:
-                try:
-                    if side == "BUY":
-                        polo.create_order(symbol, tradetype, side, amount, price)
-                        status = "| "+C.F.rd+"Complete"+C.rst+"  |"
-                        trade_amount = "{:>16}".format(" %.8f" % amount)
-                    elif side == "SELL":
-                        polo.create_order(symbol, tradetype, side, amount, price)
-                        status =  "| "+C.F.gr+"Complete"+C.rst+"  |"
-                        trade_amount = "{:>16}".format(" %.8f" % quantity)
-                    elif side == "exclude":
-                        status =  "| "+C.F.cyn+"exclude"+C.rst+"  |"
-                except ValueError:
-                    status = "INCOMPLETE"
-                    incomplete.append(orders[nr])
+    while True:
+        try:
+            global status, trade_amount
+            with open('json/orderlist.json', 'r') as openOrderlist:  # Opening JSON file
+                orders = json.load(openOrderlist)  # Reading from json file
+            nr = 0
+            max_index = len(orders) - 1
+            now = string2list(get_time(True))
+            now = [int(i) for i in now]
+            then = string2list(orders[len(orders) - 1]['time'])
+            then = [int(i) for i in then]
+            time_behind = list()
+            for i in range(len(now)):
+                item = now[i] - then[i]
+                time_behind.append(item)
+            lagg = ((time_behind[3] * 60 * 60) + (time_behind[4] * 60) + time_behind[5])
+            print("            orders: ", max_index + 1, "     list created", lagg, "seconds ago")
+            print("{:>9}".format("| Order"), "{:<22}".format("|       Amount "), "{:>12}".format("|    Price   "),
+                  "{:>15}".format("|   Total     |"), " status")
+            incomplete = []
+            while nr <= max_index:  # while = loop through PoloniexCoins List until max_index
+                symbol = orders[nr]['symbol']
+                tradetype = orders[nr]['type']
+                side = orders[nr]['side']
+                amount = orders[nr]['AltAmount']
+                quantity = orders[nr]['quantity']
+                price = orders[nr]['price']
+                total = orders[nr]['total']
+                alt = orders[nr]['alt']
+                if place:
+                    if lagg < 360:
+                        try:
+                            if side == "BUY":
+                                polo.create_order(symbol, tradetype, side, amount, price)
+                                status = "| "+C.F.rd+"Complete"+C.rst+"  |"
+                                trade_amount = "{:>16}".format(" %.8f" % amount)
+                            elif side == "SELL":
+                                polo.create_order(symbol, tradetype, side, amount, price)
+                                status =  "| "+C.F.gr+"Complete"+C.rst+"  |"
+                                trade_amount = "{:>16}".format(" %.8f" % quantity)
+                            elif side == "exclude":
+                                status =  "| "+C.F.cyn+"exclude"+C.rst+"  |"
+                        except ValueError:
+                            status = "INCOMPLETE"
+                            incomplete.append(orders[nr])
+                            trade_amount = "{:>16}".format(" %.8f" % amount)
+                elif side == "exclude":
+                    status =  "| "+C.F.cyn+"exclude"+C.rst+"  |"
+                else:
+                    status = "{:>9}".format("---")
                     trade_amount = "{:>16}".format(" %.8f" % amount)
-        elif side == "exclude":
-            status =  "| "+C.F.cyn+"exclude"+C.rst+"  |"
-        else:
-            status = "{:>9}".format("---")
-            trade_amount = "{:>16}".format(" %.8f" % amount)
 
-        print(f"{side:>8}",
-              trade_amount,
-              f"{alt:<7}",
-              " %.8f" % price,
-              "  %.8f" % total,
-              status)
-        time.sleep(0.1)
-        nr = nr + 1
+                print(f"{side:>8}",
+                      trade_amount,
+                      f"{alt:<7}",
+                      " %.8f" % price,
+                      "  %.8f" % total,
+                      status)
+                time.sleep(0.1)
+                nr = nr + 1
 
-    if place:
-        item = {"symbol": "symbol",
-                "type": "type",
-                "side": "side",
-                "AltAmount": "AltAmount",
-                "quantity": "quantity",
-                "price": "price",
-                "total": "total",
-                "alt": "alt",
-                "time": get_time()}
-        with open("json/orderlist.json", "w") as orderlistFile:
-            if not incomplete:
-                json.dump(item, orderlistFile, separators=(',', ':'))
+            if place:
+                item = {"symbol": "symbol",
+                        "type": "type",
+                        "side": "side",
+                        "AltAmount": "AltAmount",
+                        "quantity": "quantity",
+                        "price": "price",
+                        "total": "total",
+                        "alt": "alt",
+                        "time": get_time()}
+                with open("json/orderlist.json", "w") as orderlistFile:
+                    if not incomplete:
+                        json.dump(item, orderlistFile, indent=4)
+                    else:
+                        json.dump(incomplete, orderlistFile, indent=4)
+                completed()
             else:
-                json.dump(incomplete, orderlistFile, separators=(',', ':'))
-        completed()
-    else:
-        menu()
+                menu()
+        except:
+            menu()
 
 
 def get_time(time_list=False):
