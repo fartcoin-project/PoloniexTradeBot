@@ -1,0 +1,133 @@
+{
+  "schema": {
+    "title": "Configurazione ISTANZA DIGITALE",
+    "description": "File di configurazione per una istanza digitale",
+    "definitions": {
+      "responseConfig": {
+        "type": "object",
+        "title" : "configurazione/template per i messaggi di risposta",
+        "description": "inserire in questa sezione tutti i dati relativi alla configurazione dei messaggi di risposta",
+        "properties": {
+          "messaggioMailTesto": {
+            "title": "messaggioMailTesto",
+            "description" : "Oggetto della mail di risposta/notifica dell'avvenuta protocollazione",
+            "type": "string",
+            "default" : "COMUNE DI XXXX - Notifica inoltro istanza"
+          },
+          "templateRisposta": {
+            "title": "templateRisposta",
+            "description" : "nome del file che contiene il template per la risposta a video",
+            "type": "string",
+            "default" : "template1.txt"
+          },
+          "templateOggetto": {
+            "title": "templateOggetto",
+            "description" : "nome del file del template che contiene l'oggetto del protocollo",
+            "type": "string",
+            "default" : "template2.txt"
+          },
+          "templateEmail": {
+            "title": "templateEmail",
+            "description" : "nome del file del template che contiene il testo della mail di risposta",
+            "type": "string",
+            "default" : "template3.txt"
+          },
+          "sendEmail": {
+            "title": "sendEmail",
+            "description" : "invia o meno il messaggio in copia agli indirizzi indicati in seguito",
+            "type": "boolean",
+            "default" : false
+          },
+          "noreply": {
+            "title": "noreply",
+            "description" : "indirizzo da cui partono i messagi email di notifica",
+            "type": "string",
+            "default" : "no-reply@host.com"
+          },
+          "bccDebug": {
+            "title": "bccDebug",
+            "description" : "indirizzi (eventualmente separati da ;) a cui inviare copia del messaggio di risposta ad es: email1@host.com;email2@host.com",
+            "type": "string",
+            "default" : "email1@host.com;email2@host.com"
+          }
+        },
+        "required": [
+          "messaggioMailTesto",
+          "templateRisposta",
+          "templateOggetto"
+
+        ]
+      },
+      "protocolloConfig": {
+        "type": "object",
+        "title" : "configurazione dati per la protocollazion",
+        "description": "inserire in questa sezione tutti i dati relativi alla protocollazione",
+        "properties": {
+          "street_address": {
+            "title": "Address",
+            "type": "string"
+          },
+          "city": {
+            "title": "City",
+            "type": "string"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "street_address",
+          "city",
+          "state"
+        ]
+      },
+      "address": {
+        "type": "object",
+        "properties": {
+          "street_address": {
+            "title": "Address",
+            "type": "string"
+          },
+          "city": {
+            "title": "City",
+            "type": "string"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "street_address",
+          "city",
+          "state"
+        ]
+      }
+    },
+    "type": "object",
+    "required": [
+      "firstName",
+      "lastName"
+    ],
+    "properties": {
+      "idIstanza": {
+        "type": "string",
+        "title": "idIstanza",
+        "description" : "identificatore dell'istanza ad esempio DINPI01 max 8 caratteri",
+        "default": "ISTA001",
+        "maxLength": 8
+      },
+      "configRisposta" : {
+        "title" : "Configurazione della risposta",
+        "$ref": "#/definitions/responseConfig"
+
+      }
+      
+      
+    }
+  },
+  "model": {
+    
+  }
+}

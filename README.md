@@ -41,6 +41,11 @@ python .\manage.py runserver 127.0.0.1:5000
 python manage.py createsuperuser
 
 frontend
+cd front
+npm install -g @angular/cli
+npm install  --legacy-peer-deps
+
+npm audit fix --legacy-peer-deps
 
 make [@ root of Angular] proxy.conf.json
 {

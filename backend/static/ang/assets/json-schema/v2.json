@@ -1,0 +1,370 @@
+{
+  "schema": {
+      "definitions": {
+
+      "formField":{
+        "type": "object",
+
+        "oneOf":[
+          { "title": "infoSimple",
+            "$ref" : "#/definitions/infoSimple" },
+
+          { "title": "input-type-string",
+            "$ref" : "#/definitions/input-type-string" },
+
+          { "title": "input-type-upload",
+            "$ref" : "#/definitions/input-type-upload" },
+
+          { "title": "input-type-radio",
+            "$ref" : "#/definitions/input-type-radio" },
+
+          { "title": "security",
+            "$ref" : "#/definitions/security" }
+
+   
+        ]
+      },
+
+
+    "security":{
+        "type": "object",
+
+      "allOf": [
+          { "type": "string" },
+          { "type": "number" }
+      ]
+      },
+
+
+      "infoSimple" : {
+        "title" : "infoSimple",
+        "type" : "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "type",
+            "default": "infoSimple"
+          },
+          "key": {
+            "type": "string",
+            "title": "key",
+            "description" : "identificativo unico dell'attributo anche da utiliattributi descrittivi del campo"
+          },
+          "templateOptions" : {
+            "type" : "object", 
+            "title" : "templateOptions",
+            "description" : "attributi descrittivi del campo",
+            "properties" : {
+              "itemOrder" : {
+                "title" : "itemOrder",
+                "description" : "Indica l'ordine di visualizzazione",
+                "type" : "number",
+                "default" : 100
+              },
+              "title" : {
+                "title" : "title",
+                "description" : "Testo da visualizzare",
+                "type" : "string"
+              }
+            }
+          }
+        }
+      },
+
+
+      "input-type-string" : {
+        "title" : "input type string",
+        "type" : "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "key",
+            "description" : "descrizone del nome del campo"
+          },
+          "templateOptions" : {
+            "type" : "object", 
+            "title" : "templateOptions",
+            "description" : "attributi descrittivi del campo",
+            "properties" : {
+              "itemOrder" : {
+                "title" : "itemOrder",
+                "description" : "Indica l'ordine di visualizzazione",
+                "type" : "number",
+                "default" : 100
+              },
+              "title" : {
+                "title" : "title",
+                "type" : "string"
+              },
+              "type" : {
+                "title" : "type",
+                "type" : "string",
+                "default": "TEST"
+              },
+              "label" : {
+                "title" : "label",
+                "description" : "testo che viene evidenziato",
+                "type" : "string"
+              },
+              "required" : {
+                "title" : "required",
+                "description" : "obbligatorio?",
+                "type" : "boolean",
+                "default" : true
+              }
+            }
+          },
+          "validators" : {
+            "type" : "object", 
+            "title" : "validators",
+            "description" : "elenco dei validatori",
+            "properties" : {
+             
+              "validation": {
+                "type": "array",
+                "title": "Scegliere uno più validatori da assegnare al campo",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "fileValidator",
+                    "emailValidator",
+                    "euroValidator",
+                    "capValidator",
+                    "iseeValidator"
+                  ]
+                },
+                "uniqueItems": true
+              }
+
+            },
+            "required": [ "validation" ]
+
+          }
+        }
+      },
+
+
+
+      "input-type-upload" : {
+        "title" : "upload-type",
+        "type" : "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "key",
+            "description" : "identificativo del nome del campo"
+          },
+          "templateOptions" : {
+            "type" : "object", 
+            "title" : "templateOptions",
+            "description" : "attributi descrittivi del campo",
+            "properties" : {
+              "itemOrder" : {
+                "title" : "itemOrder",
+                "description" : "Indica l'ordine di ",
+                "type" : "number",
+                "default" : 100
+              },
+              "label" : {
+                "title" : "label",
+                "description" : "testo che viene evidenziato",
+                "type" : "string"
+              },
+              "required" : {
+                "title" : "required",
+                "description" : "obbligatorio?",
+                "type" : "boolean",
+                "default" : true
+              },
+
+              "maxFileSize" : {
+                "title" : "maxFileSize",
+                "description" : "dimensione max del file espressa in kb ad es: 1024kb",
+                "type" : "string",
+                "required" : true,
+                "default" : "2048kb"
+              },
+
+              "minFileSize" : {
+                "title" : "minFileSize",
+                "description" : "dimensione min del file espressa in kb ad es: 10kb",
+                "type" : "string",
+                "required" : true,
+                "default" : "10kb"
+              },
+              
+              "fileExtension" : {
+                "title" : "fileExtension",
+                "description" : "elenco delle estensioni valide per il caricamnento del fil ad es: pdf,doc",
+                "type" : "string",
+                "required" : true,
+                "default" : "pdf,doc"
+              }
+
+
+            }
+          },
+          "validators" : {
+            "type" : "object", 
+            "title" : "validators",
+            "description" : "elenco dei validatori",
+            "properties" : {
+             
+            "validation": {
+              "type": "array",
+              "title": "Scegliere uno più validatori da assegnare al campo",
+              "items": {
+                "type": "string",
+                "enum": [ "fileValidator" ],
+                "default" : "fileValidator"
+              }
+            },
+            "required": [ "validation" ],
+            "additionalProperties": true
+
+
+            }
+
+          }
+        }
+      },
+
+
+
+
+
+"input-type-radio" : {
+        "title" : "radio-italia",
+        "description" : "realizza la scelta radio",
+        "type" : "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "key",
+            "description" : "identificativo del nome del campo"
+          },
+          "templateOptions" : {
+            "type" : "object", 
+            "title" : "templateOptions",
+            "description" : "attributi descrittivi del campo",
+            "properties" : {
+              "itemOrder" : {
+                "title" : "itemOrder",
+                "description" : "Indica l'ordine di ",
+                "type" : "number",
+                "default" : 100
+              },
+              "label" : {
+                "title" : "label",
+                "description" : "testo che viene evidenziato",
+                "type" : "string"
+              },
+              "required" : {
+                "title" : "required",
+                "description" : "obbligatorio?",
+                "type" : "boolean",
+                "default" : true
+              },
+              "options" : {
+                "type": "array",
+                "title": "Elenco delle scelte",
+                "items": {
+                  "type": "object",
+                  "title" : "elenco opzioni di scelta",
+
+                    "properties" : {
+                        "value" : {
+                          "title" : "value",
+                          "description" : "codifica",
+                          "type" : "string"
+                        },
+                        "label" : {
+                          "title" : "label",
+                          "description" : "descrizione",
+                          "type" : "string"
+                        }
+                     }
+                     ,"required" : ["value","label"]
+      
+
+
+                }
+              }       
+
+         
+
+            }
+          }
+        }
+      },
+
+
+"PPPP": {
+  "type": "object",
+  "propertyNames": { "maxLength": 3, "minLength": 3 },
+  "patternProperties": {
+    "": { "type": "number" }
+  }
+},
+
+
+
+
+
+
+      "f2" : {
+        "title" : "f2",
+        "type" : "object",
+        "properties": {
+          "f1_t1": {
+            "type": "string",
+            "title": "f2_t1"
+          },
+          "f2_t2": {
+            "type": "string",
+            "title": "f2_t2"
+          }
+        }
+       
+      },
+      "Thing": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "default": "Default name"
+          }
+        }
+      }
+    },
+
+
+    "type": "object",
+    "properties": {
+
+       "formField1": {
+        "title": "formField1",
+        "$ref": "#/definitions/formField"
+      },
+
+
+      "formFieldList": {
+        "type": "array",
+        "title": "A list",
+        "items": {
+          "$ref": "#/definitions/formField"
+        }
+          
+      }
+      
+    }
+
+ 
+  },
+
+
+
+  "model": {
+   
+  }
+}
