@@ -1,7 +1,3 @@
---!! when signing up for Poloniex  !!--
---!! Use Referal code F8GSBSS5 !!--
---!! to safe 10% on transaction costs !!--
-
 # PoloniexTradeBot
 Script to automatically buy/sell altcoins to a certain BTC Value
 
@@ -28,12 +24,18 @@ Youtube.com/c/BitcoinDaytrader
 ### Possible arguments to include 
 #### tradebot.py run log --budget 1 --exclude COIN1 COIN2
 ```
-   | -h  --help      ==> help menu                           | 
-   |   run           ==> no input, best with --budget        |
-   |   log           ==> extra log print in console          |
-   | -b  --budget    ==> for ₿ 0.0001 Budget input '-b 1'    | 
-   | -e  --exclude   ==> Input the coins to exclude from bot | 
+   | -h  --help       =>  help menu                           | 
+   |   -run           =>  no input, best with --budget        |
+   |   -log           =>  extra log print in console          |
+   | --budget         =>  --₿udget 0.0001                     |
+   | --sell --no-sell =>  Input the coins to exclude          |
+   | --excl [coin ..] =>  Exclude coins from bot              |
+   |                        MUST BE LAST ARGUMENT             |
+   |                      --excl without coins = reset        |
 ```
+--!!   when signing up for Poloniex   !!--
+--!!    Use Referal code F8GSBSS5     !!--
+--!! to safe 10% on transaction costs !!--
 
 #### keywords
 ```
