@@ -91,7 +91,6 @@ def get_inputs(update=False):
             if args.sell is False:
                 print("{:>23}".format("--no-sell") + C.F.yel + "   Buy Only " + C.r)
             if args.excl is not None:
-                exclude_list = []
                 exclude_list = args.excl
                 exclude = [name.upper() for name in exclude_list]
                 load_botconfig["exclude"] = exclude
@@ -99,13 +98,30 @@ def get_inputs(update=False):
                     json.dump(load_botconfig, jsonfile, indent=4)
             if load_botconfig["exclude"]:
                 exclude_list = load_botconfig["exclude"]
-                print("\n{:>23}".format("--excl"), C.F.cyn, exclude_list, C.r)
+                print("{:>23}".format("--excl"), C.F.cyn, exclude_list, C.r)
             if update is True:
                 menu()
             break
         except(ValueError, IndexError):  # Print an Exception (error) if there is no input
             print("Print an Exception (error)")
             break
+
+
+def change_exclude_list():
+    with open('config.json', 'r') as bot_configfile:
+        load_botconfig = json.load(bot_configfile)
+    exclude_coins = load_botconfig["exclude"]
+    print("     You can change or input the coins to exclude from the bot")
+    print("{:>23}".format("--excl"), C.F.cyn, exclude_coins, C.r)
+    change_exclude_input = input("  Exclude separated by space: ")
+    change_exclude_list = change_exclude_input.split(" ")
+    exclude = [name.upper() for name in change_exclude_list]
+    load_botconfig["exclude"] = exclude
+    with open('config.json', 'w') as jsonfile:
+        json.dump(load_botconfig, jsonfile, indent=4)
+    print("   New exclude list is saved.\n   This is the new exclude list:")
+    print("{:>23}".format("--excl"), C.F.cyn, exclude, C.r)
+    menu()
 
 
 class C:
@@ -901,7 +917,7 @@ def menu():
     print('            |     4: collect_orders            |')
     print('            |     5: order_list                |')
     print('            |     6: Place the Order           |')
-    print('            |                                  |')
+    print('            |     7: Change Exclude List       |')
     print('            |     8: Change Budget             |')
     print('            |     9:      Help                 |')
     print('            |     0: exit tradebot             |')
@@ -913,6 +929,7 @@ def menu():
         4: collect_orders,
         5: order_list,
         6: order_list,
+        7: change_exclude_list,
         8: get_inputs,
         9: options,
         0: exit_tradebot,
