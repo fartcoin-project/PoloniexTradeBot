@@ -44,3 +44,6 @@ Thumbs.db
 /backend/db.sqlite3
 /backend/settings/db.sqlite3
 
+/backend/static/
+/front/.angular/
+/backend/staticfiles/

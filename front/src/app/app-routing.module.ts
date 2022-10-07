@@ -5,7 +5,7 @@ import {PestoRangeComponent} from "./pesto-range/pesto-range.component";
 import {HomeComponent} from "./home/home.component";
 import {FormlyJsonComponent} from "./formly-json/formly-json.component";
 
-const routes: Routes = [
+export const routes: Routes = [
     {path: '', component: HomeComponent},
     {path: 'showdata', component: ShowDataComponent},
     {path: 'Range', component: PestoRangeComponent},

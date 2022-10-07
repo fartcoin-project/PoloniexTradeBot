@@ -267,7 +267,7 @@ def completed():
     print("         \____\___/|_| |_| |_| .__/|_|\___|\__\___|\__,_| ")
     print("                             |_| ")
     print("         ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ")
-    exit_tradebot()
+    exit_tradebot(True)
 
 
 def exit_tradebot(good_exit=False):
@@ -884,8 +884,17 @@ def order_list(place=False):
                 nr = nr + 1
 
             if place:
-                order_item = dict(symbol=symbol, type=type, side=side, alt_amount=amount, quantity=quantity,
-                                  price=price, total=total, alt=alt, time=get_time())
+                order_item = {
+                    "symbol": symbol,
+                    "type": type,
+                    "side": side,
+                    "alt_amount": amount,
+                    "quantity": quantity,
+                    "price": price,
+                    "total": total,
+                    "alt": alt,
+                    "time": get_time()
+                }
                 if not incomplete:
                     with open("json/orderlist.json", "w") as orderlistFile:
                         json.dump(order_item, orderlistFile, indent=4)
