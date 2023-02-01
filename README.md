@@ -43,4 +43,4 @@ Youtube.com/c/BitcoinDaytrader
 'rest', 'poloniexapi', 'exchange', 
 'api', 'tradebot'
 ```
-Actions added
+
