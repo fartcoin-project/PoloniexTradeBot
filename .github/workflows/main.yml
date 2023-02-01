@@ -15,18 +15,20 @@ on:
         required: false
 
 jobs:
-  replicate_contributing:
-      name: Replicate README guide to all repositories
+  replicate_changes:
+
       runs-on: ubuntu-latest
+
       steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-      - name: Replicating file
-        uses: derberg/copy-files-to-other-repositories@v1.0.0
-        with:
-          github_token: ${{ secrets.SECRETS }}
-          patterns_to_include: README.md
-          repos_to_ignore: Calculate_FART_Mining_Reward,brute_force38,fartcoin,MiningPool,BlockExplorer,Block-EXE-Firewall,VLC-mobile-remote
-          committer_username: fartcoin-project
-          committer_email: fartcoin-project@gmail.com
-          commit_message: "ci: update global readme guide"
+        - name: Checkout repository
+          uses: actions/checkout@v2
+        - name: Replicating global workflow
+          uses: derberg/copy-files-to-other-repositories@v1.0.0
+          with:
+            github_token: ${{ secrets.SECRETS }}
+            patterns_to_ignore: '.github/workflows/main.yml'
+            patterns_to_include: 'README.md'
+            repos_to_ignore: Calculate_FART_Mining_Reward,brute_force38,fartcoin,PoloniexTradeBot,MiningPool,BlockExplorer,Block-EXE-Firewall,VLC-mobile-remote
+            exclude_private: false
+            exclude_forked: false
+            branches: .*-release,main
