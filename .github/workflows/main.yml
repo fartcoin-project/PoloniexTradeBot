@@ -26,7 +26,7 @@ jobs:
       - name: Replicating file
         uses: derberg/copy-files-to-other-repositories@v1.0.0
         with:
-          github_token: ${{ secrets.GH_TOKEN }}
+          github_token: ${{ secrets.SECRETS }}
           patterns_to_include: README.md
           repos_to_ignore: Calculate_FART_Mining_Reward,brute_force38,fartcoin,PoloniexTradeBot,MemesExchange,MiningPool,BlockExplorer,Block-EXE-Firewall,VLC-mobile-remote
           committer_username: fartcoin-project
