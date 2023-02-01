@@ -1,4 +1,4 @@
-name: REAME update
+name: README update
 
 on:
   push:
@@ -17,7 +17,7 @@ on:
 jobs:
   replicate_contributing:
       name: Replicate README guide to all repositories
-      runs-on: PoloniexTradeBot
+      runs-on: ubuntu-latest
       steps:
       - name: Checkout repository
         uses: actions/checkout@v2
