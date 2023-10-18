@@ -1,0 +1,34 @@
+name: README update
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - '.github/workflows/**'
+      - 'README.md'
+  workflow_dispatch:
+    inputs:
+      repo_name:
+        description: |
+          You can specify name of the repository where workflows should be pushed manually. As long as repository is not ignored by workflow settings.
+          If you do not specify exact repository name, the workflow will try to replicate all missing changes to all repositories.
+        required: false
+
+jobs:
+  replicate_changes:
+
+      runs-on: ubuntu-latest
+
+      steps:
+        - name: Checkout repository
+          uses: actions/checkout@v2
+        - name: Replicating global workflow
+          uses: derberg/copy-files-to-other-repositories@v1.0.0
+          with:
+            github_token: ${{ secrets.SECRETS }}
+            patterns_to_ignore: '.github/workflows/main.yml'
+            patterns_to_include: 'README.md'
+            repos_to_ignore: Calculate_FART_Mining_Reward,brute_force38,fartcoin,PoloniexTradeBot,MiningPool,BlockExplorer,Block-EXE-Firewall,VLC-mobile-remote
+            exclude_private: false
+            exclude_forked: false
+            branches: .*-release,main
