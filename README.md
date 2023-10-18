@@ -5,7 +5,7 @@ Script to automatically buy/sell altcoins to a certain BTC Value
 
 ## Install Guide PoloniexTradebot.py
 ```
-# 1| Install Python 3 from https://www.python.org/ (select add to PATH)
+# 1| Install Python 3.11+ from https://www.python.org/ (select add to PATH)
 # 2| Install git https://gitforwindows.org/ 
 # 3| Open CMD/git-bash/terminal: 
 #               pip install ccxt     (CCXT library)

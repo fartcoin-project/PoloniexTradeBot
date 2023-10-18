@@ -474,11 +474,15 @@ def listed():  # 3
     with open('json/poloniex_currencies.json', 'r') as openfile:  # Opening JSON file
         json_object = json.load(openfile)  # Reading from json file
     key_list = json_object.keys()
+    print(key_list)
     listed_coins = []
+
     for x in sorted(key_list):
-        delisted = json_object[x]['info']['delisted']
+        x_id = json_object[x]['id']
+        delisted = json_object[x]['info'][0][x_id]['delisted']
         if delisted is False:
             listed_coins.append(x)
+
     with open("json/poloniex_ListedCoins.txt", 'w') as outfile:  # open file in write mode
         for coins in listed_coins:
             outfile.write("%s\n" % coins)  # write each item on a new line
@@ -519,7 +523,7 @@ def make_poloniex_coins():  # 4
             outfile.write("%s\n" % coin)  # write each item on a new line
         if args.log:
             print(poloniex_coinlist)
-            print('        BTC markets as json/  poloniex_btc_pairs.txt  saved')
+            print('        BTC markets as json/poloniex_btc_pairs.txt  saved')
         else:
             update_progress(100 / 100.0)
     total_balance()
@@ -603,6 +607,7 @@ def advice():
         load_advice_config = json.load(configfile)
     btc_balance = float(load_advice_config["balance"])
     mybudget = float(load_advice_config["budget"])
+    if max_index == -1: max_index = 0
     input_advice = round((btc_balance * 0.8) / (max_index + 1), 6)
     print("         ", max_index + 1, "Bitcoin markets")
     print("               BTC available  :  ₿ %.8f" % btc_balance)
