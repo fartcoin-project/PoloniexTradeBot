@@ -14,6 +14,6 @@ describe('TabsPage', () => {
   it('should create the tabs page', () => {
     const fixture = TestBed.createComponent(TabsPage);
     const app = fixture.debugElement.componentInstance;
-    expect(app).toBeTruthy();
+    expect(app).to.true
   });
 });

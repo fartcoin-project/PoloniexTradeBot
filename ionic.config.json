@@ -12,6 +12,12 @@
       "integrations": {
         "capacitor": {}
       }
+    },
+    "trade-bot": {
+      "name": "TradeBot",
+      "integrations": {},
+      "type": "angular",
+      "root": ""
     }
   }
 }

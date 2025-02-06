@@ -18,7 +18,7 @@ import {SharedPrefsPlugin} from "shared-prefs-plugin/src";
 import {Capacitor} from "@capacitor/core";
 
 export interface pass {
-  vlcPass: string,
+  tradebotPass: string,
 }
 
 export interface User {
@@ -47,10 +47,10 @@ export interface User {
 export class AccountPage implements OnInit {
   username: string;
   ipaddress: string;
-  vlcpassword: string;
+  tradebotpassword: string;
   myForm: FormGroup;
   user: User;
-  addVlc: User;
+  addTradebot: User;
 
   userSettings: User[] = [{
     ipAddress: '192.168.2.2:8080', hide: false
@@ -61,7 +61,7 @@ export class AccountPage implements OnInit {
 
   public getterdata: User[] = [];
   configForm: any;
-  vlcPass: string = '';
+  tradebotPass: string = '';
 
   constructor(
     private userService: UserService,
@@ -89,7 +89,7 @@ export class AccountPage implements OnInit {
       ipAddress: new FormControl('', this.ipValidator),
     });
 
-    this.userSettings = [...this.userSettings, this.addVlc]
+    this.userSettings = [...this.userSettings, this.addTradebot]
   }
 
   setHide(i: number) {
@@ -116,7 +116,7 @@ export class AccountPage implements OnInit {
         ].filter(value => value.ipAddress)
       }
       let configAccount: User[] = this.getterdata;
-      this.storageServive.setData("VLC", configAccount).then(r => {
+      this.storageServive.setData("TRADEBOT", configAccount).then(r => {
       });
       // this.storageServive.setData('pass', config).then(r =>{});
 
@@ -128,7 +128,7 @@ export class AccountPage implements OnInit {
 
   async getJson(getter: number) {
     if (getter == 1) {
-      await this.storageServive.getData("VLC").then((data: any) => {
+      await this.storageServive.getData("TRADEBOT").then((data: any) => {
 
         let res;
         if (data.value) {
@@ -144,7 +144,7 @@ export class AccountPage implements OnInit {
   }
 
   async delJson(i) {
-    await this.storageServive.delData("VLC");
+    await this.storageServive.delData("TRADEBOT");
     let foo_object = this.getterdata[i];
     this.getterdata = this.getterdata.filter(obj => {
       return obj !== foo_object
@@ -155,11 +155,11 @@ export class AccountPage implements OnInit {
     if (x === 1) {
       if (Capacitor.getPlatform() === 'android') {
         const result = await SharedPrefsPlugin.getPreference({ key: 'pass' });
-        this.vlcPass = result.value || 'no password'
+        this.tradebotPass = result.value || 'no password'
         console.log('Pass value from Android:', result.value);
       } else {
         const result = await Preferences.get({key: 'pass'})
-        this.vlcPass = result.value || 'no password'
+        this.tradebotPass = result.value || 'no password'
         console.log('Pass value from Web:', result.value);
       }
     }
@@ -168,12 +168,12 @@ export class AccountPage implements OnInit {
       if (Capacitor.getPlatform() === 'android') {
         await SharedPrefsPlugin.setPreference({
           key: 'pass',
-          value: this.vlcPass || '1z2x'
+          value: this.tradebotPass || '1z2x'
         });
       } else {
         await Preferences.set({
           key: 'pass',
-          value: this.vlcPass || '1z2x',
+          value: this.tradebotPass || '1z2x',
         });
       }
     }

@@ -4,12 +4,12 @@ import { RouterModule, Routes } from '@angular/router';
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'vlc',
+    redirectTo: 'tradebot',
     pathMatch: 'full'
   },
   {
-    path: 'vlc',
-    loadChildren: () => import('./pages/vlc/vlc.module').then(m => m.VlcModule)
+    path: 'tradebot',
+    loadChildren: () => import('./pages/tradebot/tradebot.module').then(m => m.TradebotModule)
   },
   {
     path: 'account',

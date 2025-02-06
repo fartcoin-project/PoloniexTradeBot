@@ -4,6 +4,7 @@
 
 export const environment = {
   production: false,
+  apiUrl: 'http://127.0.0.1:3001', // Running locally inside the Android app
   databaseNames:[
     {name:"starter_posts"},
     {name:"starter_employees"},

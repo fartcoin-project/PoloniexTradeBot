@@ -17,8 +17,8 @@ import {Capacitor} from "@capacitor/core";
 export class AppComponent implements OnInit {
   appPages = [
     {
-      title: 'vlc',
-      url: '/app/tabs/vlc',
+      title: 'tradebot',
+      url: '/app/tabs/tradebot',
       icon: 'easel'
     },
     {
@@ -83,7 +83,7 @@ export class AppComponent implements OnInit {
 
     const setDefaultConfig = async () => {
       if (!this.passvalue) {
-        this.passvalue = prompt('Please enter your VLC password: ', '') || '1z2x';
+        this.passvalue = prompt('Please enter your TRADEBOT password: ', '') || '1z2x';
         {
           await Preferences.set({
             key: 'pass',

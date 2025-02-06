@@ -2,7 +2,7 @@
 export interface UserOptions {
   username: string;
   password: string;
-  vlcpassword: string;
+  tradebotpassword: string;
   ipaddress: string;
 
 }

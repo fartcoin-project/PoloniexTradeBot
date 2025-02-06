@@ -19,17 +19,17 @@ const routes: Routes = [
         ]
       },
       {
-        path: 'vlc',
+        path: 'tradebot',
         children: [
           {
             path: '',
-            loadChildren: () => import('../vlc/vlc.module').then(m => m.VlcModule)
+            loadChildren: () => import('../tradebot/tradebot.module').then(m => m.TradebotModule)
           }
         ]
       },
       {
         path: '',
-        redirectTo: '/app/tabs/vlc',
+        redirectTo: '/app/tabs/tradebot',
         pathMatch: 'full'
       }
     ]

@@ -61,12 +61,12 @@ export class UserData {
     });
   }
 
-  setVlcpassword(vlcpassword: string): Promise<any> {
-    return this.storage.set('vlcpassword', vlcpassword);
+  setTradebotpassword(tradebotpassword: string): Promise<any> {
+    return this.storage.set('tradebotpassword', tradebotpassword);
   }
 
-  getVlcpassword(): Promise<string> {
-    return this.storage.get('vlcpassword').then((value) => {
+  getTradebotpassword(): Promise<string> {
+    return this.storage.get('tradebotpassword').then((value) => {
       return value;
     });
   }

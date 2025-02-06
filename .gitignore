@@ -58,12 +58,12 @@ testem.log
 .DS_Store
 Thumbs.db
 /env/
-/backend/
 /front/
 /config.json
 /.angular/
 /.github/
 /android/.idea/
+/android/www/
 /www/
 
 /C/wamp64

@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import {VlcComponent} from "../vlc/vlc.component";
+import {TradebotComponent} from "../tradebot/tradebot.component";
 import {IonicModule} from "@ionic/angular";
 import {IFrameToggler} from "../../iframe/iframe-toggler.component";
 
