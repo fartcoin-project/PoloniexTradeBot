@@ -1,0 +1,75 @@
+<ion-header class="ion-no-border" [translucent]="true">
+    <ion-toolbar>
+      <ion-buttons slot="start">
+        <ion-menu-button></ion-menu-button>
+      </ion-buttons>
+      <ion-item><i class="fas fa-transgender-alt"></i></ion-item>
+      <ion-title>TradeBot</ion-title>
+
+      <ion-buttons slot="primary">
+        <iframe-button *ngFor="let item of vlcdata"
+                       [frameName]="item.ipAddress"
+                       [buttonText]="item.buttenName"
+                       [isHidden]="item.hide"
+                       [awesomeLogo]="item.icon"
+                       (iframeToggle)="toggle(item)"/>
+      </ion-buttons>
+    </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>API Credentials</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-item>
+        <ion-label position="stacked">API Key</ion-label>
+        <ion-input [(ngModel)]="apiKey" type="text" placeholder="Enter API Key"></ion-input>
+      </ion-item>
+
+      <ion-item>
+        <ion-label position="stacked">Secret Key</ion-label>
+        <ion-input [(ngModel)]="secretKey" type="password" placeholder="Enter Secret Key"></ion-input>
+      </ion-item>
+
+      <ion-item>
+        <ion-label position="stacked">Budget (BTC)</ion-label>
+        <ion-input [(ngModel)]="budget" type="number" step="0.0001"></ion-input>
+      </ion-item>
+
+      <ion-button expand="full" color="success" (click)="startBot()">Start Bot</ion-button>
+      <ion-button expand="full" color="danger" (click)="stopBot()">Stop Bot</ion-button>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Trading Pairs</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-list>
+        <ion-item *ngFor="let pair of tradingPairs">
+          {{ pair }}
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Open Orders</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-button expand="full" (click)="getOrders()">Refresh Orders</ion-button>
+      <ion-list>
+        <ion-item *ngFor="let order of orders">
+          <ion-label>
+            <h2>{{ order.symbol }}</h2>
+            <p>{{ order.side }} - {{ order.amount }} @ {{ order.price }} BTC</p>
+          </ion-label>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
+</ion-content>

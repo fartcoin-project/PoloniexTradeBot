@@ -1,0 +1,28 @@
+img {
+  max-width: 140px;
+
+  border-radius: 50%;
+}
+
+
+ion-item {
+  display: grid;
+  justify-content: center;
+}
+
+ion-input{
+  margin-left: 20px;
+}
+
+.butt{
+  gap: 15px;
+}
+
+.data {
+  font-size: large;
+}
+
+.list-md.list-inset {
+  margin: 0;
+  padding: 0;
+}

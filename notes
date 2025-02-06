@@ -1,0 +1,234 @@
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Install the latest PowerShell for new features and improvements! https://aka.ms/PSWindows
+
+PS C:\WorkProjects\Android\angular-mobile-app> npm install @capacitor/ios @capacitor/android
+
+removed 831 packages, changed 2 packages, and audited 98 packages in 20s
+
+9 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+PS C:\WorkProjects\Android\angular-mobile-app> npx cap add ios
+[error] Could not find installation of TypeScript.
+        To use capacitor.config.ts files, you must install TypeScript in your project, e.g. w/ npm install -D typescript
+PS C:\WorkProjects\Android\angular-mobile-app> npx cap add android
+[error] Could not find installation of TypeScript.
+        To use capacitor.config.ts files, you must install TypeScript in your project, e.g. w/ npm install -D typescript
+PS C:\WorkProjects\Android\angular-mobile-app> npm install -D typescript
+
+added 1 package, and audited 99 packages in 1s
+
+9 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+PS C:\WorkProjects\Android\angular-mobile-app> npx cap add ios
+[error] ios platform already exists.
+        To re-add this platform, first remove .\ios, then run this command again.
+        WARNING: Your native project will be completely removed.
+PS C:\WorkProjects\Android\angular-mobile-app> npx cap add android
+[error] android platform already exists.
+        To re-add this platform, first remove .\android, then run this command again.
+        WARNING: Your native project will be completely removed.
+PS C:\WorkProjects\Android\angular-mobile-app> ng build angular-mobile-app -c production
+Node.js version v19.6.0 detected.
+Odd numbered Node.js versions will not enter LTS status and should not be used for production. For more information, please see https://nodejs.org/en/about/releases/.
+Error: Could not find the '@angular-devkit/build-angular:browser' builder's node package.
+PS C:\WorkProjects\Android\angular-mobile-app> npm install -g @angular/cli
+npm WARN deprecated @npmcli/move-file@2.0.1: This functionality has been moved to @npmcli/fs
+
+changed 224 packages in 20s
+PS C:\WorkProjects\Android\angular-mobile-app> ng build angular-mobile-app -c production
+Node.js version v19.6.0 detected.
+Odd numbered Node.js versions will not enter LTS status and should not be used for production. For more information, please see https://nodejs.org/en/about/releases/.
+Error: Could not find the '@angular-devkit/build-angular:browser' builder's node package.
+PS C:\WorkProjects\Android\angular-mobile-app> cd ..
+PS C:\WorkProjects\Android> ng build angular-mobile-app -c production
+Node.js version v19.6.0 detected.
+Odd numbered Node.js versions will not enter LTS status and should not be used for production. For more information, please see https://nodejs.org/en/about/releases/.
+Error: This command is not available when running the Angular CLI outside a workspace.
+PS C:\WorkProjects\Android> cd .\angular-mobile-app\
+PS C:\WorkProjects\Android\angular-mobile-app> ng build
+Node.js version v19.6.0 detected.
+Odd numbered Node.js versions will not enter LTS status and should not be used for production. For more information, please see https://nodejs.org/en/about/releases/.
+Error: Could not find the '@angular-devkit/build-angular:browser' builder's node package.
+PS C:\WorkProjects\Android\angular-mobile-app> npm install @angular-devkit/build-angular
+
+added 627 packages, and audited 726 packages in 32s
+
+85 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+PS C:\WorkProjects\Android\angular-mobile-app> npx cap sync
+[error] Could not find the web assets directory: .\dist\angular-mobile-app.
+        Please create it and make sure it has an index.html file. You can change the path of this directory in
+        capacitor.config.ts (webDir option). You may need to compile the web assets for your app (typically npm run
+        build). More info: https://capacitorjs.com/docs/basics/workflow#sync-your-project
+PS C:\WorkProjects\Android\angular-mobile-app> ng build
+Node.js version v19.6.0 detected.
+Odd numbered Node.js versions will not enter LTS status and should not be used for production. For more information, please see https://nodejs.org/en/about/releases/.
+PS C:\WorkProjects\Android\angular-mobile-app> ng build angular-mobile-app -c production
+Node.js version v19.6.0 detected.
+Odd numbered Node.js versions will not enter LTS status and should not be used for production. For more information, please see https://nodejs.org/en/about/releases/.
+You seem to not be depending on "@angular/core". This is an error.
+PS C:\WorkProjects\Android\angular-mobile-app> npm install -D @angular/core
+
+added 2 packages, and audited 728 packages in 2s
+
+85 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+PS C:\WorkProjects\Android\angular-mobile-app> ng build angular-mobile-app -c production
+Node.js version v19.6.0 detected.
+Odd numbered Node.js versions will not enter LTS status and should not be used for production. For more information, please see https://nodejs.org/en/about/releases/.
+√ Browser application bundle generation complete.
+
+./src/app/app-routing.module.ts:3:0-47 - Error: Module not found: Error: Can't resolve '@angular/router' in 'C:\WorkProjects\Android\angular-mobile-app\src\app'
+
+./src/app/app.module.ts:3:0-58 - Error: Module not found: Error: Can't resolve '@angular/platform-browser' in 'C:\WorkProjects\Android\angular-mobile-app\src\app'
+
+./src/main.ts:1:0-65 - Error: Module not found: Error: Can't resolve '@angular/platform-browser' in 'C:\WorkProjects\Android\angular-mobile-app\src'
+
+Error: src/app/app-routing.module.ts:2:38 - error TS2307: Cannot find module '@angular/router' or its corresponding type declarations.
+
+2 import { RouterModule, Routes } from '@angular/router';
+                                       ~~~~~~~~~~~~~~~~~
+
+
+Error: src/app/app-routing.module.ts:7:12 - error NG1010: Value at position 0 in the NgModule.imports of AppRoutingModule is not a reference
+  Value could not be determined statically.
+
+7   imports: [RouterModule.forRoot(routes)],
+             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  src/app/app-routing.module.ts:7:13
+    7   imports: [RouterModule.forRoot(routes)],
+                  ~~~~~~~~~~~~~~~~~~~~
+    Unable to evaluate this expression statically.
+  src/app/app-routing.module.ts:7:13
+    7   imports: [RouterModule.forRoot(routes)],
+                  ~~~~~~~~~~~~
+    Unknown reference.
+
+
+Error: src/app/app.component.html:428:25 - error NG8002: Can't bind to 'ngSwitch' since it isn't a known property of 'div'.
+
+428   <div class="terminal" [ngSwitch]="selection.value">
+                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  src/app/app.component.ts:5:16
+    5   templateUrl: './app.component.html',
+                     ~~~~~~~~~~~~~~~~~~~~~~
+    Error occurs in the template of component AppComponent.
+
+
+Error: src/app/app.component.html:484:1 - error NG8001: 'router-outlet' is not a known element:
+1. If 'router-outlet' is an Angular component, then verify that it is part of this module.
+2. If 'router-outlet' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+
+484 <router-outlet></router-outlet>
+    ~~~~~~~~~~~~~~~
+
+  src/app/app.component.ts:5:16
+    5   templateUrl: './app.component.html',
+                     ~~~~~~~~~~~~~~~~~~~~~~
+    Error occurs in the template of component AppComponent.
+
+
+Error: src/app/app.module.ts:2:31 - error TS2307: Cannot find module '@angular/platform-browser' or its corresponding type declarations.
+
+2 import { BrowserModule } from '@angular/platform-browser';
+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Error: src/app/app.module.ts:11:12 - error NG1010: Value at position 0 in the NgModule.imports of AppModule is not a reference
+  Value could not be determined statically.
+
+11   imports: [
+              ~
+12     BrowserModule,
+   ~~~~~~~~~~~~~~~~~~
+13     AppRoutingModule
+   ~~~~~~~~~~~~~~~~~~~~
+14   ],
+   ~~~
+
+  src/app/app.module.ts:12:5
+    12     BrowserModule,
+           ~~~~~~~~~~~~~
+    Unknown reference.
+
+
+Error: src/main.ts:1:40 - error TS2307: Cannot find module '@angular/platform-browser-dynamic' or its corresponding type declarations.
+
+1 import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
+                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Error: src/main.ts:7:10 - error TS7006: Parameter 'err' implicitly has an 'any' type.
+
+7   .catch(err => console.error(err));
+           ~~~
+
+
+
+PS C:\WorkProjects\Android\angular-mobile-app> npm install -D @angular/platform-browser-dynamic
+
+added 3 packages, removed 1 package, and audited 731 packages in 7s
+
+85 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+PS C:\WorkProjects\Android\angular-mobile-app> npm install -D @angular/router
+
+added 1 package, and audited 732 packages in 3s
+
+85 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+PS C:\WorkProjects\Android\angular-mobile-app> ng build angular-mobile-app -c production
+Node.js version v19.6.0 detected.
+Odd numbered Node.js versions will not enter LTS status and should not be used for production. For more information, please see https://nodejs.org/en/about/releases/.
+√ Browser application bundle generation complete.
+√ Copying assets complete.
+√ Index html generation complete.
+
+Initial Chunk Files           | Names         |  Raw Size | Estimated Transfer Size
+main.f94ddd5b7076f24c.js      | main          | 202.77 kB |                53.96 kB
+polyfills.e030152eb246a032.js | polyfills     |  33.08 kB |                10.67 kB
+runtime.bcb672908c5331a8.js   | runtime       | 914 bytes |               515 bytes
+styles.ef46db3751d8e999.css   | styles        |   0 bytes |                       -
+
+                              | Initial Total | 236.74 kB |                65.13 kB
+
+Build at: 2023-02-05T00:13:30.656Z - Hash: f2404835624edefe - Time: 11738ms
+PS C:\WorkProjects\Android\angular-mobile-app> npx cap sync
+√ Copying web assets from angular-mobile-app to android\app\src\main\assets\public in 98.72ms
+√ Creating capacitor.config.json in android\app\src\main\assets in 2.15ms
+√ copy android in 116.44ms
+√ Updating Android plugins in 2.50ms
+√ update android in 52.34ms
+√ Copying web assets from angular-mobile-app to ios\App\App\public in 13.05ms
+√ Creating capacitor.config.json in ios\App\App in 1.26ms
+√ copy ios in 22.66ms
+√ Updating iOS plugins in 2.78ms
+\ Updating iOS native dependencies with pod install [warn] Skipping pod install because CocoaPods is not installed
+[warn] Unable to find "xcodebuild". Skipping xcodebuild clean step...
+√ Updating iOS native dependencies with pod install in 83.07ms
+√ update ios in 97.00ms
+√ copy web in 2.38ms
+√ update web in 661.30μs
+[info] Sync finished in 0.328s
+PS C:\WorkProjects\Android\angular-mobile-app> npx cap open ios
+√ Opening the Xcode workspace... in 3.01s
+PS C:\WorkProjects\Android\angular-mobile-app> npx cap open android
+[info] Opening Android project at: android.
+PS C:\WorkProjects\Android\angular-mobile-app>
+

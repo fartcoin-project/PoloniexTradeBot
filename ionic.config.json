@@ -1,0 +1,17 @@
+{
+  "defaultProject": "TradeBot",
+  "projects": {
+    "angular-mobile-ap": {
+      "name": "TradeBot",
+      "integrations": {
+        "capacitor": {}
+      },
+      "type": "angular"
+    },
+    "TradeBot": {
+      "integrations": {
+        "capacitor": {}
+      }
+    }
+  }
+}

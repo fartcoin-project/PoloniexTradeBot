@@ -31,3 +31,8 @@ Thumbs.db
 /backend/
 /front/
 /config.json
+/.angular/
+/.github/
+/android/.idea/
+/www/
+/tradebot-backend/node_modules/
