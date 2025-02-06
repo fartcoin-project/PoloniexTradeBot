@@ -1,0 +1,117 @@
+{
+  "schedule": [
+    {
+      "date": "2047-05-17",
+      "groups": [
+        {
+          "time": "8:00 am",
+          "sessions": [
+            {
+              "name": "Breakfast",
+              "timeStart": "8:00 am",
+              "timeEnd": "9:00 am",
+              "location": "Dining Hall",
+              "tracks": ["Food"],
+              "id": "1"
+            }
+          ]
+        },
+        {
+          "time": "9:15 am",
+          "sessions": [
+            {
+              "name": "Getting Started with Ionic",
+              "location": "Hall 2",
+              "description": "Mobile devices and browsers are now advanced enough that developers can build native-quality mobile apps using open web technologies like HTML5, Javascript, and CSS. In this talk, we’ll provide background on why and how we created Ionic, the design decisions made as we integrated Ionic with Angular, and the performance considerations for mobile platforms that our team had to overcome. We’ll also review new and upcoming Ionic features, and talk about the hidden powers and benefits of combining mobile app development and Angular.",
+              "speakerNames": ["Ted Turtle"],
+              "timeStart": "9:30 am",
+              "timeEnd": "9:45 am",
+              "tracks": ["Ionic"],
+              "id": "2"
+            },
+            {
+              "name": "Ionic Tooling",
+              "location": "Executive Ballroom",
+              "description": "Mobile devices and browsers are now advanced enough that developers can build native-quality mobile apps using open web technologies like HTML5, Javascript, and CSS. In this talk, we’ll provide background on why and how we created Ionic, the design decisions made as we integrated Ionic with Angular, and the performance considerations for mobile platforms that our team had to overcome. We’ll also review new and upcoming Ionic features, and talk about the hidden powers and benefits of combining mobile app development and Angular.",
+              "speakerNames": ["Rachel Rabbit"],
+              "timeStart": "9:45 am",
+              "timeEnd": "10:00 am",
+              "tracks": ["Tooling"],
+              "id": "3"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+
+  "speakers": [
+    {
+      "name": "Burt Bear",
+      "profilePic": "/assets/img/speakers/bear.jpg",
+      "instagram": "ionicframework",
+      "twitter": "ionicframework",
+      "about": "Burt is a Bear. Burt's interests include poetry, dashing space heroes, and lions.",
+      "title": "Software Engineer",
+      "location": "Everywhere",
+      "email": "burt@example.com",
+      "phone": "+1-541-754-3010",
+      "id": "1"
+    },
+    {
+      "name": "Charlie Cheetah",
+      "profilePic": "/assets/img/speakers/cheetah.jpg",
+      "instagram": "ionicframework",
+      "twitter": "ionicframework",
+      "about": "Charlie is a Cheetah. Charlie's interests include country music, plush animals, pyrotechnics, and skeletons.",
+      "title": "Software Engineer",
+      "location": "Everywhere",
+      "email": "charlie@example.com",
+      "phone": "+1-541-754-3010",
+      "id": "2"
+    }
+  ],
+
+  "tracks": [
+    {
+      "name": "Angular",
+      "icon": "logo-angular"
+    },
+    {
+      "name": "Documentation",
+      "icon": "document"
+    },
+    {
+      "name": "Food",
+      "icon": "restaurant"
+    },
+    {
+      "name": "Ionic",
+      "icon": "logo-ionic"
+    },
+    {
+      "name": "Tooling",
+      "icon": "hammer"
+    },
+    {
+      "name": "Design",
+      "icon": "color-palette"
+    },
+    {
+      "name": "Services",
+      "icon": "cog"
+    },
+    {
+      "name": "Workshop",
+      "icon": "construct"
+    },
+    {
+      "name": "Communication",
+      "icon": "call"
+    },
+    {
+      "name": "Navigation",
+      "icon": "compass"
+    }
+  ]
+}

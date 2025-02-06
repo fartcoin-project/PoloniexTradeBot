@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">tradebot</string>
-    <string name="title_activity_main">tradebot</string>
+    <string name="app_name">TradeBot</string>
+    <string name="title_activity_main">TradeBot</string>
     <string name="package_name">com.omariskandarani.tradebot</string>
     <string name="custom_url_scheme">com.omariskandarani.tradebot</string>
 </resources>
