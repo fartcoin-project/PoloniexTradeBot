@@ -1,49 +1,42 @@
-# See http://help.github.com/ignore-files/ for more about ignoring files.
+# See https://help.github.com/articles/ignoring-files/
 
-# configs
-/backend/tradebot/config.json
-/backend/tradebot/tradebot_config.py
-/settings/django_config.py
-json2sqlite.py
-backend.iml
-/Json2sqlite2Json.py
-/backend/tradebot/changeJsonOutput.py
-/tradebot/json/
-/tradebot/orderbooks/
-/backend/settings/django_config.py
-# compiled output
-/build
-/dist
-backend/tradebot/json
-backend/tradebot/orderbooks
+# secrets and runtime data
+tradebot/config.json
+tradebot/tradebot_config.py
 
-# dependencies
-/node_modules
-/venv
-*.env
+# bot cache (created at runtime)
+tradebot/json/
+tradebot/orderbooks/
+logs/
+data/
 
-# IDEs and editors
-/backend/tradebot/tradebot.iml
-/tmp
-/out-tsc
-.project
-.classpath
-.c9/
-/.idea
-.idea
+# python
+__pycache__/
+*.py[cod]
+venv/
+.env
 
-# System Files
+# pyinstaller
+tradebot/build/
+tradebot/dist/
+/TradeBot.exe
+
+# IDEs
+.idea/
+*.iml
+
+# OS
 .DS_Store
 Thumbs.db
 
-
-/tradebot_config.py
-/config.json
-/orderbooks/
-/json/
-/backend/db.sqlite3
-/backend/settings/db.sqlite3
-
-/backend/static/
-/front/.angular/
-/backend/staticfiles/
+# removed stacks (desktop-only project)
+android/
+src/
+front/
+shared-prefs-plugin/
+node_modules/
+package.json
+package-lock.json
+angular.json
+capacitor.config.*
+ionic.config.json

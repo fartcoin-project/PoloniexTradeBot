@@ -1,0 +1,5 @@
+# Build TradeBot.exe (includes all runtime deps)
+-r requirements.txt
+
+pyinstaller>=6.0
+pyinstaller-hooks-contrib>=2024.0

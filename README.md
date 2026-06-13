@@ -1,77 +1,90 @@
---!! when signing up for Poloniex  !!--
---!! Use Referal code F8GSBSS5 !!--
---!! to safe 10% on transaction costs !!--
+# TradeBot
 
-# PoloniexTradeBot
-Script to automatically buy/sell altcoins to a certain BTC Value
+Desktop Poloniex trading bot — **Qt (PySide6)** GUI + optional single `.exe`. No web app, no Android.
 
-![python](https://img.shields.io/badge/python-2.7%20%26%203-blue.svg)
+Poloniex trading bot — automatically buy/sell altcoins toward a target BTC value per coin.
 
-## Install Guide PoloniexTradebot.py
+Use referral code **F8GSBSS5** when signing up for Poloniex (10% fee discount).
+
+## Quick start (GUI)
+
+```powershell
+cd tradebot
+pip install -r requirements.txt
+copy tradebot_config.EXAMPLE.py tradebot_config.py
+# Edit tradebot_config.py with your Poloniex API key and secret
+python run_gui.py
 ```
-# 1) Install Python 3 from https://www.python.org/ (select add to PATH)
-# 2) Install git https://gitforwindows.org/ (optional)
-# 3) Open Command/git-bash/terminal, and test python: python.exe  (ctrl + Z enter to exit python)
-# 4) Update PIP installer for Python: python -m pip install --upgrade pip
-# 5) Clone the repository: git clone https://github.com/fartcoin-project/PoloniexTradeBot.git
-#    or download and unzip the PoloniexTradeBot-master.zip  and enter the folder
-#    cd PoloniexTradeBot-master\backend
-# 6) pip install -I -r .\requirements.txt
-# 7) python -m venv --upgrade-deps env
-# 8) 
+
+## Quick start (CLI)
+
+```powershell
+cd tradebot
+python tradebot.py
 ```
-npm install -g typescript
-npm install -g @angular/cli
 
+CLI flags: `-run`, `-log`, `--budget 0.0001`, `--sell` / `--no-sell`, `--excl COIN1 COIN2`
 
-# Python: Getting Started
+## Scheduled runs (Windows Task Scheduler)
 
-A Django app.
+For **daily automation at a fixed time** (e.g. 18:00 with a fixed budget), use **Task Scheduler** — not a Windows Service. A service runs continuously; a scheduled task runs once per day, which fits rebalancing.
 
+1. Set budget, markets, buy/sell mode, and excludes in the GUI → **Save settings** (`config.json`).
+2. Test a headless run:
 
-# dj-angular
-An implementation to combine Django and Angular.
+```powershell
+cd tradebot
+python run_scheduled.py
+```
 
-cd backend
-pip install --ignore-installed -r .\requirements.txt
-new terminal
-python -m venv --upgrade-deps env
-python manage.py collectstatic
-python .\manage.py runserver 127.0.0.1:5000
-python manage.py createsuperuser
+3. Register a daily task (default 18:00):
 
-frontend
-cd front
-npm install -g @angular/cli
-npm install  --legacy-peer-deps
+```powershell
+cd tradebot
+.\scripts\register_scheduled_task.ps1
+```
 
-npm audit fix --legacy-peer-deps
+Or with the built exe: `TradeBot.exe --scheduled` (same as `run_scheduled.py`).
 
-make [@ root of Angular] proxy.conf.json
-{
-"/getData/*": {
-    "target": "http://localhost:5000",
-    "secure": false,
-    "logLevel": "debug"
-},
-"/getVol/*": {
-    "target": "http://localhost:5000",
-    "secure": false,
-    "logLevel": "debug"
-}
-}
+Logs: `tradebot/logs/tradebot.log`. Override budget for one run: `python run_scheduled.py --budget 5.0`.
 
+## Build single .exe
 
-Angular.json
-"serve": {
-    "builder": "@angular-devkit/build-angular:dev-server",
-        "options": {
-            "browserTarget": "frontend:build",
-            "proxyConfig": "proxy.conf.json"
+From project root:
 
+```powershell
+.\build_exe.ps1
+```
 
-Package.json:
-"static-2django": "ng build  --configuration production  --output-path ../frontend/static/ang --watch --output-hashing none",
+Or from `tradebot/`:
 
+```powershell
+cd tradebot
+.\build_exe.ps1
+```
 
+See [tradebot/BUILD.md](tradebot/BUILD.md). Output: **`TradeBot.exe`** in the project root.
 
+## Layout
+
+```
+tradebot/
+  tradebot.py              # Core engine (CLI)
+  runtime_paths.py         # Dev + frozen exe paths
+  run_gui.py               # GUI entry
+  tradebot_config.EXAMPLE.py
+  gui/                     # Qt desktop UI (PySide6)
+  build_exe.ps1
+  tradebot.spec
+  BUILD.md
+  LICENSE
+  requirements.txt
+```
+
+Runtime data (gitignored): `config.json`, `json/`, `orderbooks/`, `tradebot_config.py`
+
+## Requirements
+
+- Python 3.10+
+- Poloniex API key with trading permissions
+- Minimum order: ₿ 0.0001
