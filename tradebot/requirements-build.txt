@@ -3,3 +3,4 @@
 
 pyinstaller>=6.0
 pyinstaller-hooks-contrib>=2024.0
+Pillow>=10.0.0

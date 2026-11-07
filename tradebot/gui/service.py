@@ -10,7 +10,7 @@ from gui.cancel import CancelController
 from gui.data_store import DataStore, build_wallet_from_cache, load_orderlist
 from gui.log_stream import ProgressCapture, QueueLogWriter, SessionFileLogger
 from gui.paths import app_dir, setup_runtime
-from gui.schedule import apply_windows_schedule
+from gui.schedule import apply_windows_schedule, ScheduleApplyResult
 from gui.schedule_config import normalize_schedule
 from quote_config import (
     format_quote_value,
@@ -37,7 +37,7 @@ ACTION_LABELS = {
     "place_orders": "place orders",
     "start_bot": "start bot",
     "total_balance": "total balance",
-    "refresh_advice": "refresh advice",
+    "refresh_advice": "budget advice",
     "open_orders": "open orders",
 }
 
@@ -235,11 +235,15 @@ class BotService:
         if not key:
             raise ValueError("API key is required")
         if not secret:
-            _, existing_secret = read_api_credentials()
+            existing_key, existing_secret = read_api_credentials()
             if existing_secret and existing_secret != PLACEHOLDER_API_SECRET:
                 secret = existing_secret
             else:
                 raise ValueError("API secret is required")
+        else:
+            existing_key, existing_secret = read_api_credentials()
+            if key == existing_key and secret == existing_secret:
+                return
         save_api_credentials(key, secret)
         if self._tb is not None:
             self._tb.reload_exchange()
@@ -276,6 +280,7 @@ class BotService:
                 f"Budget must be at least {format_quote_value(primary, min_ord)}"
             )
         cfg = self.load_config()
+        old_schedule = normalize_schedule(cfg.get("schedule", {}))
         cfg["budget"] = float(budget)
         cfg["markets"] = selected
         cfg["quote_currency"] = primary
@@ -296,6 +301,7 @@ class BotService:
             cfg["schedule"] = normalize_schedule(schedule)
         elif "schedule" not in cfg:
             cfg["schedule"] = normalize_schedule({})
+        schedule_changed = cfg["schedule"] != old_schedule
         path = os.path.join(BOT_DIR, "config.json")
         with open(path, "w", encoding="utf-8") as handle:
             json.dump(cfg, handle, indent=4)
@@ -304,7 +310,9 @@ class BotService:
         self.set_verbose_log(verbose_log)
         self._apply_sell_mode(self._tb, sell_mode)
         self._emit_config()
-        return apply_windows_schedule(cfg["schedule"])
+        if schedule_changed:
+            return apply_windows_schedule(cfg["schedule"])
+        return ScheduleApplyResult(ok=True, message="", task_state=None)
 
     def help_text(self):
         self._ensure_loaded()

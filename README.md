@@ -46,24 +46,23 @@ cd tradebot
 
 Or with the built exe: `TradeBot.exe --scheduled` (same as `run_scheduled.py`).
 
-Logs: `tradebot/logs/tradebot.log`. Override budget for one run: `python run_scheduled.py --budget 5.0`.
+Logs (dev): `tradebot/logs/tradebot.log`. Installed exe: `%LOCALAPPDATA%\TradeBot\logs\tradebot.log`. Override budget for one run: `python run_scheduled.py --budget 5.0`.
 
-## Build single .exe
+## Build installer (self-contained)
 
 From project root:
 
 ```powershell
-.\build_exe.ps1
+.\build_setup.ps1
 ```
 
-Or from `tradebot/`:
+Output: **`setup-v0.1.0.exe`**. No Python required on the target PC.
 
-```powershell
-cd tradebot
-.\build_exe.ps1
-```
+- Installs to `%LOCALAPPDATA%\Programs\TradeBot`
+- Stores config, API keys, logs, and caches in `%LOCALAPPDATA%\TradeBot`
+- Uses `icon.png` for the app / window / taskbar icon and `art.png` for the setup wizard
 
-See [tradebot/BUILD.md](tradebot/BUILD.md). Output: **`TradeBot.exe`** in the project root.
+See [tradebot/BUILD.md](tradebot/BUILD.md). For a bare exe only: `.\build_exe.ps1`.
 
 ## Layout
 
@@ -75,13 +74,18 @@ tradebot/
   tradebot_config.EXAMPLE.py
   gui/                     # Qt desktop UI (PySide6)
   build_exe.ps1
+  build_setup.ps1
   tradebot.spec
   BUILD.md
   LICENSE
   requirements.txt
+installer/
+  TradeBot.iss
+icon.png
+art.png
 ```
 
-Runtime data (gitignored): `config.json`, `json/`, `orderbooks/`, `tradebot_config.py`
+Installed app data: `%LOCALAPPDATA%\TradeBot` (`config.json`, `json/`, `orderbooks/`, `tradebot_config.py`, `logs/`). Dev mode still uses files under `tradebot/`.
 
 ## Requirements
 

@@ -35,8 +35,8 @@ class TestRunAsync:
 
         messages = _drain(log_queue)
         tags = [tag for tag, _ in messages]
-        assert ("status", "Running: refresh_advice...") in messages
-        assert ("status", "Finished: refresh_advice") in messages
+        assert ("status", "Running: budget advice...") in messages
+        assert ("status", "Finished: budget advice") in messages
         assert tags.count("busy") >= 2
         assert True in [payload for tag, payload in messages if tag == "busy"]
         assert False in [payload for tag, payload in messages if tag == "busy"]

@@ -49,10 +49,10 @@ class TestBotService:
         log_queue = queue.Queue()
         svc = BotService(log_queue)
         svc._ensure_loaded()
-        svc._tb.get_update = lambda show=False: None
-        svc._tb.market_list = lambda: None
-        svc._tb.collect_orders = lambda show=False: None
-        svc._tb.order_list = lambda place=False: None
+        monkeypatch.setattr(svc._tb, "get_update", lambda show=False: None)
+        monkeypatch.setattr(svc._tb, "market_list", lambda: None)
+        monkeypatch.setattr(svc._tb, "collect_orders", lambda show=False: None)
+        monkeypatch.setattr(svc._tb, "order_list", lambda place=False: None)
         assert svc.run_sync("start_bot") is True
 
     def test_safe_advice_stats_uses_quote_pair_file(self, tradebot_env, monkeypatch):

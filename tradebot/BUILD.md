@@ -7,7 +7,44 @@ cd tradebot
 python run_gui.py
 ```
 
-## Single-file exe
+Dev mode stores config, API keys, logs, and caches in this folder.
+
+## Self-contained installer (recommended)
+
+From project root:
+
+```powershell
+.\build_setup.ps1
+```
+
+Or from this folder:
+
+```powershell
+cd tradebot
+.\build_setup.ps1
+```
+
+Output: **`../setup-v0.1.0.exe`** (project root)
+
+The setup is fully self-contained: no Python or Qt install is required on the target PC.
+
+### What the installer does
+
+| Item | Location |
+|------|----------|
+| Application | `%LOCALAPPDATA%\Programs\TradeBot\TradeBot.exe` |
+| Config, API keys, logs, caches | `%LOCALAPPDATA%\TradeBot` |
+| Start menu shortcut | TradeBot |
+| Desktop shortcut | optional |
+
+Uninstall keeps AppData by default and asks whether to remove `%LOCALAPPDATA%\TradeBot`.
+
+### Icons
+
+- `icon.png` → app / window / taskbar icon (`TradeBot.exe` + Qt window icon)
+- `art.png` → setup file icon and left-side wizard graphic
+
+## Single-file exe only
 
 From project root:
 
@@ -15,47 +52,23 @@ From project root:
 .\build_exe.ps1
 ```
 
-Or from this folder:
-
-```powershell
-cd tradebot
-.\build_exe.ps1
-```
-
 Output: **`../TradeBot.exe`** (project root)
 
-### First run (end user)
-
-1. Copy `TradeBot.exe` to any folder.
-2. Launch — creates `tradebot_config.py`, `config.json`, `json/`, `orderbooks/` beside the exe.
-3. Edit `tradebot_config.py` with Poloniex API keys, restart.
-
-**API keys are never embedded in the exe** — they load from `tradebot_config.py` next to the executable.
-
-### Distribution layout
-
-```
-MyTradeBot/
-  TradeBot.exe
-  tradebot_config.py
-  config.json
-  json/
-  orderbooks/
-```
+Prefer `build_setup.ps1` for distribution. A bare exe still writes data to `%LOCALAPPDATA%\TradeBot` when frozen.
 
 ### Manual build
 
-Close any running `TradeBot.exe` first (the build script stops them automatically).
+Close any running `TradeBot.exe` first (the build scripts stop them automatically).
 
 ```powershell
 pip install -r requirements-build.txt
+python build_assets.py
 pyinstaller tradebot.spec --noconfirm --distpath ..
 ```
 
-Output: **`TradeBot.exe`** in the project root (same as `build_exe.ps1`).
+Then compile `installer/TradeBot.iss` with Inno Setup 6 (`ISCC`) to produce `setup-v0.1.0.exe`.
 
 ### Tips
 
 - Set `console=True` in `tradebot.spec` to debug with a terminal window.
-- Add `icon='assets/tradebot.ico'` when you have an icon file.
-- Expect ~50–80 MB exe size (Python + ccxt + Qt bundled).
+- Expect ~50–80 MB exe size (Python + ccxt + Qt bundled); the setup wraps that exe.

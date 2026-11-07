@@ -19,13 +19,22 @@ workpath = str(root / "build")
 
 qt_datas, qt_binaries, qt_hidden = collect_all("PySide6")
 
+icon_png = project_root / "icon.png"
+icon_ico = project_root / "installer" / "assets" / "icon.ico"
+if not icon_ico.is_file():
+    icon_ico = None
+
+extra_datas = [
+    (str(root / "tradebot_config.EXAMPLE.py"), "."),
+]
+if icon_png.is_file():
+    extra_datas.append((str(icon_png), "."))
+
 a = Analysis(
     ["run_gui.py"],
     pathex=[str(root)],
     binaries=qt_binaries,
-    datas=qt_datas + [
-        (str(root / "tradebot_config.EXAMPLE.py"), "."),
-    ],
+    datas=qt_datas + extra_datas,
     hiddenimports=[
         "tradebot",
         "runtime_paths",
@@ -89,4 +98,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=str(icon_ico) if icon_ico else None,
 )

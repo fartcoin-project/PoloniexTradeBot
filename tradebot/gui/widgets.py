@@ -166,9 +166,10 @@ class WorkflowStepList(QFrame):
 
     def __init__(self, title, parent=None):
         super().__init__(parent)
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 6, 0, 2)
-        layout.setSpacing(2)
+        layout.setContentsMargins(0, 8, 0, 4)
+        layout.setSpacing(6)
 
         heading = QLabel(title.upper())
         heading.setObjectName("sectionTitle")

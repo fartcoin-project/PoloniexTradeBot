@@ -63,6 +63,9 @@ def _base_coin(coin_key):
     if "_" in coin_key:
         return coin_key.rsplit("_", 1)[0]
     return coin_key
+
+
+def _fmt_btc(value):
     if value is None:
         return "—"
     return f"₿ {value:.8f}"
@@ -966,9 +969,10 @@ class TradingSettingsPanel(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("sidebarSettings")
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 6, 0, 2)
-        layout.setSpacing(4)
+        layout.setContentsMargins(0, 8, 0, 4)
+        layout.setSpacing(8)
 
         layout.addWidget(SectionLabel("Trading"))
 
@@ -979,9 +983,11 @@ class TradingSettingsPanel(QFrame):
         self.budget_edit = QLineEdit("0.0001")
         layout.addWidget(self.budget_edit)
 
-        self.use_advice_btn = QPushButton("Use advice")
+        self.use_advice_btn = QPushButton("Budget advice")
         self.use_advice_btn.setObjectName("ghostBtn")
         layout.addWidget(self.use_advice_btn)
+
+        layout.addSpacing(4)
 
         self.market_lbl = QLabel("Markets")
         self.market_lbl.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 11px;")
@@ -1009,6 +1015,8 @@ class TradingSettingsPanel(QFrame):
         mode_row.addWidget(self.buy_check)
         mode_row.addWidget(self.sell_check)
         layout.addLayout(mode_row)
+
+        layout.addSpacing(4)
 
         layout.addWidget(SectionLabel("Schedule"))
 

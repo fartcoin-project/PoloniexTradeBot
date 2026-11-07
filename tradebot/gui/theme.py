@@ -31,6 +31,13 @@ QFrame#sidebarSettings {{
     margin-top: 6px;
     padding-top: 4px;
 }}
+QScrollArea#sidebarScroll {{
+    background: transparent;
+    border: none;
+}}
+QScrollArea#sidebarScroll > QWidget > QWidget {{
+    background: transparent;
+}}
 QFrame#sidebarSettings QLineEdit,
 QFrame#sidebarSettings QComboBox {{
     min-height: 22px;
@@ -44,8 +51,12 @@ QFrame#sidebarSettings QPushButton#ghostBtn {{
 }}
 QFrame#sidebarSettings QPushButton#saveBtn {{
     text-align: center;
-    margin-top: 2px;
+    margin-top: 6px;
     padding: 4px 8px;
+}}
+QFrame#sidebarSettings QCheckBox {{
+    min-height: 22px;
+    padding: 2px 0;
 }}
 QFrame#panel {{
     background-color: {BG_PANEL};

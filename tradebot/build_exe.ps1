@@ -20,6 +20,12 @@ if ($LASTEXITCODE -ne 0) {
     Write-Error "pip install failed (exit $LASTEXITCODE)"
 }
 
+Write-Host "Generating icon assets..."
+python build_assets.py
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "build_assets.py failed (exit $LASTEXITCODE)"
+}
+
 Write-Host "Building single-file exe (this may take a few minutes)..."
 python -m PyInstaller tradebot.spec --noconfirm --distpath $projectRoot --workpath $workDir
 if ($LASTEXITCODE -ne 0) {

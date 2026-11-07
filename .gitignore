@@ -16,10 +16,12 @@ __pycache__/
 venv/
 .env
 
-# pyinstaller
+# pyinstaller / installer
 tradebot/build/
 tradebot/dist/
 /TradeBot.exe
+/setup-v*.exe
+/installer/assets/
 
 # IDEs
 .idea/

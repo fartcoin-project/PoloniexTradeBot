@@ -2,35 +2,91 @@ import os
 import shutil
 import sys
 
+APP_NAME = "TradeBot"
+MIGRATE_FILES = ("config.json", "tradebot_config.py")
+MIGRATE_FOLDERS = ("json", "orderbooks", "data", "logs")
+
 
 def is_frozen():
     return getattr(sys, "frozen", False)
 
 
-def app_dir():
-    """Writable folder — exe directory when frozen, else backend/tradebot."""
+def install_dir():
+    """Directory that contains the executable (frozen) or the source package."""
     if is_frozen():
         return os.path.dirname(sys.executable)
     return os.path.dirname(os.path.abspath(__file__))
 
 
+def data_dir():
+    """Writable data folder — AppData when frozen, else the source package."""
+    if not is_frozen():
+        return os.path.dirname(os.path.abspath(__file__))
+    local_appdata = os.environ.get("LOCALAPPDATA")
+    if local_appdata:
+        return os.path.join(local_appdata, APP_NAME)
+    return os.path.join(os.path.expanduser("~"), "AppData", "Local", APP_NAME)
+
+
+def app_dir():
+    """Writable folder used by the app (config, logs, caches)."""
+    return data_dir()
+
+
 def bundle_dir():
     if is_frozen():
         return sys._MEIPASS
-    return app_dir()
+    return install_dir()
 
 
 def setup_runtime():
     """Prepare cwd, import path, and data folders."""
+    if is_frozen():
+        _migrate_legacy_data_if_needed(install_dir(), data_dir())
+
     root = app_dir()
+    os.makedirs(root, exist_ok=True)
     os.chdir(root)
     if root not in sys.path:
         sys.path.insert(0, root)
 
-    for folder in ("json", "orderbooks", "data", "logs"):
+    for folder in MIGRATE_FOLDERS:
         os.makedirs(os.path.join(root, folder), exist_ok=True)
 
     _seed_first_run_files(root)
+
+
+def _data_dir_has_user_data(root):
+    for name in MIGRATE_FILES:
+        if os.path.exists(os.path.join(root, name)):
+            return True
+    return False
+
+
+def _migrate_legacy_data_if_needed(source_root, dest_root):
+    """One-time copy from beside the exe into AppData when AppData is empty."""
+    if source_root == dest_root:
+        return
+    if _data_dir_has_user_data(dest_root):
+        return
+    if not _data_dir_has_user_data(source_root):
+        return
+
+    os.makedirs(dest_root, exist_ok=True)
+    for name in MIGRATE_FILES:
+        src = os.path.join(source_root, name)
+        dest = os.path.join(dest_root, name)
+        if os.path.isfile(src) and not os.path.exists(dest):
+            shutil.copy2(src, dest)
+
+    for name in MIGRATE_FOLDERS:
+        src = os.path.join(source_root, name)
+        dest = os.path.join(dest_root, name)
+        if not os.path.isdir(src):
+            continue
+        if os.path.exists(dest):
+            continue
+        shutil.copytree(src, dest)
 
 
 def _seed_first_run_files(root):
@@ -73,8 +129,10 @@ def read_api_credentials():
 
 
 def save_api_credentials(api_key, api_secret):
-    """Write Poloniex API credentials beside the app (never bundled in exe)."""
-    path = os.path.join(app_dir(), "tradebot_config.py")
+    """Write Poloniex API credentials into the data folder (never bundled in exe)."""
+    root = app_dir()
+    os.makedirs(root, exist_ok=True)
+    path = os.path.join(root, "tradebot_config.py")
     content = (
         "# SECURITY WARNING: keep the secret key used in production secret!\n"
         f"SECRET_API_KEY = {api_key!r}\n"
@@ -92,7 +150,7 @@ def api_config_ready():
 
 
 def load_tradebot_config():
-    """Load API keys from tradebot_config.py next to the app (never bundled in exe)."""
+    """Load API keys from tradebot_config.py in the data folder (never bundled in exe)."""
     import importlib.util
 
     root = app_dir()
@@ -108,4 +166,3 @@ def load_tradebot_config():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
-

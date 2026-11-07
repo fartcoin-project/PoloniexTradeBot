@@ -8,7 +8,7 @@ import sys
 
 from PySide6.QtCore import Qt, QTimer
 
-from PySide6.QtGui import QFont, QTextCursor
+from PySide6.QtGui import QFont, QIcon, QTextCursor
 
 from PySide6.QtWidgets import (
 
@@ -71,7 +71,7 @@ from gui.panels import (
     WalletPanel,
 )
 
-from gui.paths import app_dir
+from gui.paths import app_dir, bundle_dir
 
 from gui.log_stream import SessionFileLogger
 
@@ -112,10 +112,43 @@ from gui.window_settings import (
     save_window_geometry,
 )
 
-from runtime_paths import PLACEHOLDER_API_KEY
+from runtime_paths import PLACEHOLDER_API_KEY, install_dir
 
 
 STARTUP_UPDATE_DELAY_SEC = 5
+
+APP_USER_MODEL_ID = "TradeBot.Desktop"
+
+
+def resolve_app_icon_path():
+    """Return icon.png from the PyInstaller bundle or project root."""
+    candidates = [
+        os.path.join(bundle_dir(), "icon.png"),
+        os.path.join(install_dir(), "icon.png"),
+        os.path.join(os.path.dirname(install_dir()), "icon.png"),
+    ]
+    for path in candidates:
+        if os.path.isfile(path):
+            return path
+    return None
+
+
+def apply_windows_app_id():
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_USER_MODEL_ID)
+    except (AttributeError, OSError):
+        pass
+
+
+def load_app_icon():
+    path = resolve_app_icon_path()
+    if not path:
+        return QIcon()
+    return QIcon(path)
 
 
 
@@ -129,15 +162,19 @@ MENU_GROUPS = [
 
         ("Total Balance", "total_balance", None),
 
-        ("Refresh Advice", "refresh_advice", None),
+        ("Budget Advice", "refresh_advice", None),
 
     ]),
 
-    ("Orders", [
+    ("Build orders", [
 
         ("Build Orders", "collect_orders", None),
 
         ("Preview Orders", "preview_orders", None),
+
+    ]),
+
+    ("Placing orders", [
 
         ("Place Orders", "place_orders", "dangerBtn"),
 
@@ -211,6 +248,8 @@ class TradeBotWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("TradeBot — Poloniex")
+
+        self.setWindowIcon(load_app_icon())
 
         self.setMinimumSize(MIN_WIDTH, MIN_HEIGHT)
 
@@ -534,9 +573,19 @@ class TradeBotWindow(QMainWindow):
 
         self.save_btn.clicked.connect(self._save_config)
 
-        side_layout.addWidget(self.trading_settings)
 
-        side_layout.addSpacing(8)
+
+        sidebar_scroll_body = QWidget()
+
+        sidebar_scroll_layout = QVBoxLayout(sidebar_scroll_body)
+
+        sidebar_scroll_layout.setContentsMargins(0, 0, 0, 0)
+
+        sidebar_scroll_layout.setSpacing(10)
+
+
+
+        sidebar_scroll_layout.addWidget(self.trading_settings)
 
 
 
@@ -578,11 +627,23 @@ class TradeBotWindow(QMainWindow):
 
                 self._workflow_steps[action_id] = group
 
-            side_layout.addWidget(group)
+            sidebar_scroll_layout.addWidget(group)
 
 
 
-        side_layout.addStretch()
+        self._sidebar_scroll = QScrollArea()
+
+        self._sidebar_scroll.setObjectName("sidebarScroll")
+
+        self._sidebar_scroll.setWidgetResizable(True)
+
+        self._sidebar_scroll.setFrameShape(QFrame.Shape.NoFrame)
+
+        self._sidebar_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+        self._sidebar_scroll.setWidget(sidebar_scroll_body)
+
+        side_layout.addWidget(self._sidebar_scroll, stretch=1)
 
 
 
@@ -1094,15 +1155,7 @@ class TradeBotWindow(QMainWindow):
 
         self.trading_settings.set_schedule(cfg.get("schedule", {}))
 
-        from gui.schedule import get_windows_task_state
-
-        self.trading_settings.update_schedule_status(
-
-            cfg.get("schedule", {}),
-
-            task_state=get_windows_task_state(),
-
-        )
+        QTimer.singleShot(0, self._refresh_schedule_task_state)
 
         self._apply_markets_ui(markets)
 
@@ -1123,6 +1176,22 @@ class TradeBotWindow(QMainWindow):
         )
 
         self._update_api_status()
+
+
+
+    def _refresh_schedule_task_state(self):
+
+        from gui.schedule import get_windows_task_state
+
+        cfg = self.service.load_config()
+
+        self.trading_settings.update_schedule_status(
+
+            cfg.get("schedule", {}),
+
+            task_state=get_windows_task_state(),
+
+        )
 
 
 
@@ -1846,11 +1915,19 @@ class TradeBotWindow(QMainWindow):
 
 def main():
 
+    apply_windows_app_id()
+
     app = QApplication(sys.argv)
 
     app.setStyle("Fusion")
 
     app.setStyleSheet(STYLESHEET)
+
+    icon = load_app_icon()
+
+    if not icon.isNull():
+
+        app.setWindowIcon(icon)
 
     window = TradeBotWindow()
 
