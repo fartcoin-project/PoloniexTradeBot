@@ -1,8 +1,12 @@
+import json
+
 import os
 
 import queue
 
 import sys
+
+import threading
 
 
 
@@ -62,6 +66,7 @@ from PySide6.QtWidgets import (
 
 from gui.data_store import build_wallet_from_cache
 
+from gui.chat_panel import ChatPanel
 from gui.panels import (
     BudgetPanel,
     HistoryPanel,
@@ -294,6 +299,30 @@ class TradeBotWindow(QMainWindow):
         self._poll_timer.timeout.connect(self._poll_queue)
 
         self._poll_timer.start(100)
+
+        if hasattr(self, "chat_panel"):
+
+            self.chat_panel.load_history(self.service.get_ai_chat_history())
+
+            self.chat_panel.set_llm_status({
+
+                "ok": False,
+
+                "detail": "not checked yet",
+
+                "llm": self.service.get_llm_config(),
+
+                "models": [],
+
+            })
+
+        QTimer.singleShot(500, self._check_colibri)
+
+        self.service._sync_background_workers()
+
+        if self.service.get_llm_config().get("colibri_autostart"):
+
+            QTimer.singleShot(1500, lambda: self._run_action("colibri_start"))
 
 
 
@@ -799,6 +828,16 @@ class TradeBotWindow(QMainWindow):
 
         self.options_panel.help_requested = self._show_help
 
+        self.options_panel.colibri_list_requested = lambda: self._run_action("colibri_list_models")
+
+        self.options_panel.colibri_download_requested = self._colibri_download
+
+        self.options_panel.colibri_start_requested = lambda: self._run_action("colibri_start")
+
+        self.options_panel.colibri_stop_requested = lambda: self._run_action("colibri_stop")
+
+        self.options_panel.colibri_status_requested = lambda: self._run_action("colibri_status")
+
         self.options_panel.set_paths(
 
             self.service.log_file_path(),
@@ -811,11 +850,29 @@ class TradeBotWindow(QMainWindow):
 
 
 
+        self.chat_panel = ChatPanel()
+
+        self.chat_panel.send_requested = self._chat_send
+
+        self.chat_panel.analyze_requested = lambda: self._run_action("ai_analyze")
+
+        self.chat_panel.propose_requested = lambda: self._run_action("ai_propose_orders")
+
+        self.chat_panel.cycle_requested = lambda: self._run_action("ai_rebalance_cycle")
+
+        self.chat_panel.status_requested = lambda: self._run_action("ai_status_report")
+
+        self.chat_panel.health_requested = self._check_colibri
+
+
+
         self.tabs.addTab(bot_tab, "Dashboard")
 
         self.tabs.addTab(self.wallet_panel, "Wallet")
 
         self.tabs.addTab(self.history_panel, "History")
+
+        self.tabs.addTab(self.chat_panel, "Chat")
 
         self.tabs.addTab(self.options_panel, "Options")
 
@@ -908,6 +965,10 @@ class TradeBotWindow(QMainWindow):
         if self.tabs.widget(index) is self.options_panel:
 
             self.options_panel.refresh_log()
+
+        elif hasattr(self, "chat_panel") and self.tabs.widget(index) is self.chat_panel:
+
+            self.chat_panel.load_history(self.service.get_ai_chat_history())
 
 
 
@@ -1174,6 +1235,8 @@ class TradeBotWindow(QMainWindow):
             api_key if api_key != PLACEHOLDER_API_KEY else "",
 
         )
+
+        self.options_panel.load_llm_fields(cfg.get("llm"))
 
         self._update_api_status()
 
@@ -1607,7 +1670,19 @@ class TradeBotWindow(QMainWindow):
 
                 schedule=schedule,
 
+                llm=self.options_panel.get_llm_fields(),
+
             )
+
+            hf_input = self.options_panel.get_hf_token_input()
+
+            if hf_input:
+
+                self.service.save_hf_token_if_provided(hf_input)
+
+                self.options_panel.clear_hf_token_input()
+
+            self.service._sync_background_workers()
 
         except ValueError as exc:
 
@@ -1735,6 +1810,10 @@ class TradeBotWindow(QMainWindow):
 
         self.stop_btn.setEnabled(busy)
 
+        if hasattr(self, "chat_panel"):
+
+            self.chat_panel.set_busy(busy)
+
         if busy:
 
             self.status_pill.set_state("busy", "Running…")
@@ -1805,6 +1884,74 @@ class TradeBotWindow(QMainWindow):
 
 
 
+    def _chat_send(self, text):
+
+        if self._busy:
+
+            return
+
+        self._save_config(silent=True)
+
+        self.service.run_chat_async(text)
+
+
+
+    def _colibri_download(self):
+
+        if self._busy:
+
+            return
+
+        if not self._save_config(silent=True):
+
+            return
+
+        model_id = self.options_panel.get_selected_colibri_model()
+
+        if not model_id:
+
+            QMessageBox.warning(
+
+                self,
+
+                "Colibri model",
+
+                "Select or type a model id, then click Download / setup model.",
+
+            )
+
+            return
+
+        self.service.run_colibri_download_async(model_id)
+
+
+
+    def _check_colibri(self):
+
+        def worker():
+
+            try:
+
+                self.service.check_colibri_health()
+
+            except Exception as exc:
+
+                self.log_queue.put(("llm_status", {
+
+                    "ok": False,
+
+                    "detail": str(exc),
+
+                    "llm": self.service.get_llm_config(),
+
+                    "models": [],
+
+                }))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+
+
     def _run_action(self, action):
 
         self._cancel_startup_countdown()
@@ -1817,7 +1964,49 @@ class TradeBotWindow(QMainWindow):
 
             return
 
-        if not self.service.api_configured():
+        llm_only = action in (
+
+            "ai_analyze",
+
+            "ai_status_report",
+
+            "ai_chat",
+
+            "ai_propose_orders",
+
+            "colibri_list_models",
+
+            "colibri_download",
+
+            "colibri_start",
+
+            "colibri_stop",
+
+            "colibri_status",
+
+        )
+
+        needs_exchange = action in (
+
+            "start_bot",
+
+            "update_markets",
+
+            "collect_orders",
+
+            "preview_orders",
+
+            "place_orders",
+
+            "total_balance",
+
+            "open_orders",
+
+            "ai_rebalance_cycle",
+
+        )
+
+        if needs_exchange and not self.service.api_configured():
 
             QMessageBox.warning(
 
@@ -1831,7 +2020,13 @@ class TradeBotWindow(QMainWindow):
 
             return
 
-        if not self._confirm_place(action):
+        if action == "ai_rebalance_cycle" and self.service.get_llm_config().get("auto_place"):
+
+            if not self._confirm_place("place_orders"):
+
+                return
+
+        elif not llm_only and not self._confirm_place(action):
 
             return
 
@@ -1894,6 +2089,62 @@ class TradeBotWindow(QMainWindow):
                 elif tag == "action_done":
 
                     self._on_workflow_step_done(payload["action"], payload["ok"])
+
+                elif tag == "chat":
+
+                    if hasattr(self, "chat_panel"):
+
+                        self.chat_panel.append_entry(payload)
+
+                elif tag == "llm_status":
+
+                    if hasattr(self, "chat_panel"):
+
+                        self.chat_panel.set_llm_status(payload)
+
+                elif tag == "colibri_log":
+
+                    if hasattr(self, "options_panel"):
+
+                        self.options_panel.append_colibri_log(payload)
+
+                elif tag == "colibri_progress":
+
+                    if hasattr(self, "options_panel"):
+
+                        pct = (payload or {}).get("percent")
+
+                        line = (payload or {}).get("line") or ""
+
+                        if pct is None:
+
+                            self.options_panel.set_colibri_progress(
+
+                                self.options_panel.colibri_progress.value(),
+
+                                line[:80] if line else None,
+
+                            )
+
+                        else:
+
+                            self.options_panel.set_colibri_progress(pct, line[:80] if line else None)
+
+                elif tag == "colibri_models":
+
+                    if hasattr(self, "options_panel"):
+
+                        self.options_panel.set_colibri_models(payload)
+
+                elif tag == "colibri_status":
+
+                    if hasattr(self, "options_panel"):
+
+                        self.options_panel.append_colibri_log(
+
+                            json.dumps(payload, indent=2)[:2000]
+
+                        )
 
                 elif tag == "done":
 

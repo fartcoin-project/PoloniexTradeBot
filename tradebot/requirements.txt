@@ -15,5 +15,8 @@ coincurve>=18.0.0
 typing_extensions>=4.8.0
 setuptools>=65.0.0
 
+# --- Local LLM (Colibri OpenAI-compatible HTTP) ---
+httpx>=0.27.0
+
 # --- Qt desktop GUI ---
 PySide6>=6.6.0

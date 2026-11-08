@@ -1,10 +1,11 @@
+import json
 import os
 import shutil
 import sys
 
 APP_NAME = "TradeBot"
-MIGRATE_FILES = ("config.json", "tradebot_config.py")
-MIGRATE_FOLDERS = ("json", "orderbooks", "data", "logs")
+MIGRATE_FILES = ("config.json", "tradebot_config.py", "secrets.json")
+MIGRATE_FOLDERS = ("json", "orderbooks", "data", "logs", "colibri-models", "colibri-state")
 
 
 def is_frozen():
@@ -166,3 +167,55 @@ def load_tradebot_config():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def secrets_path():
+    return os.path.join(app_dir(), "secrets.json")
+
+
+def _load_secrets():
+    path = secrets_path()
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path, encoding="utf-8") as handle:
+            data = json.load(handle)
+        return data if isinstance(data, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _save_secrets(data):
+    root = app_dir()
+    os.makedirs(root, exist_ok=True)
+    path = secrets_path()
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(data, handle, indent=2)
+    try:
+        os.chmod(path, 0o600)
+    except OSError:
+        pass
+
+
+def read_hf_token():
+    """HuggingFace token for Colibri model downloads (never bundled in exe)."""
+    return str(_load_secrets().get("hf_token") or "").strip()
+
+
+def save_hf_token(token):
+    """Persist HF token; empty string clears it."""
+    data = _load_secrets()
+    value = (token or "").strip()
+    if value:
+        data["hf_token"] = value
+    else:
+        data.pop("hf_token", None)
+    _save_secrets(data)
+
+
+def colibri_models_dir():
+    return os.path.join(app_dir(), "colibri-models")
+
+
+def colibri_state_dir():
+    return os.path.join(app_dir(), "colibri-state")

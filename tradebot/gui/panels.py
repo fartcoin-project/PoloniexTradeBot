@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPlainTextEdit,
+    QProgressBar,
     QPushButton,
     QScrollArea,
     QSizePolicy,
@@ -1233,6 +1234,154 @@ class OptionsPanel(QWidget):
         prefs_panel.layout.addLayout(prefs_row)
         layout.addWidget(prefs_panel)
 
+        llm_panel = Panel("Colibri / local LLM")
+        self.llm_enabled_check = QCheckBox("Enable Colibri integration")
+        self.llm_enabled_check.setChecked(True)
+        llm_panel.layout.addWidget(self.llm_enabled_check)
+
+        self.colibri_list_requested = None
+        self.colibri_download_requested = None
+        self.colibri_start_requested = None
+        self.colibri_stop_requested = None
+        self.colibri_status_requested = None
+        self._colibri_model_ids = []
+
+        hf_row = QHBoxLayout()
+        hf_lbl = QLabel("HF token")
+        hf_lbl.setFixedWidth(100)
+        hf_lbl.setStyleSheet(f"color: {TEXT_MUTED};")
+        hf_row.addWidget(hf_lbl)
+        self.hf_token_edit = QLineEdit()
+        self.hf_token_edit.setEchoMode(QLineEdit.EchoMode.Password)
+        self.hf_token_edit.setPlaceholderText("HuggingFace token (leave blank to keep saved)")
+        hf_row.addWidget(self.hf_token_edit, stretch=1)
+        self.show_hf_check = QCheckBox("Show")
+        self.show_hf_check.toggled.connect(self._toggle_hf_visibility)
+        hf_row.addWidget(self.show_hf_check)
+        llm_panel.layout.addLayout(hf_row)
+
+        pick_row = QHBoxLayout()
+        pick_lbl = QLabel("HF model")
+        pick_lbl.setFixedWidth(100)
+        pick_lbl.setStyleSheet(f"color: {TEXT_MUTED};")
+        pick_row.addWidget(pick_lbl)
+        self.colibri_model_combo = QComboBox()
+        self.colibri_model_combo.setEditable(True)
+        self.colibri_model_combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        self.colibri_model_combo.setPlaceholderText("Refresh list or type model id")
+        pick_row.addWidget(self.colibri_model_combo, stretch=1)
+        self.colibri_refresh_btn = QPushButton("Refresh list")
+        self.colibri_refresh_btn.setObjectName("ghostBtn")
+        self.colibri_refresh_btn.clicked.connect(self._on_colibri_list)
+        pick_row.addWidget(self.colibri_refresh_btn)
+        llm_panel.layout.addLayout(pick_row)
+
+        coli_btn_row = QHBoxLayout()
+        self.colibri_download_btn = QPushButton("Download / setup model")
+        self.colibri_download_btn.setObjectName("ghostBtn")
+        self.colibri_download_btn.clicked.connect(self._on_colibri_download)
+        coli_btn_row.addWidget(self.colibri_download_btn)
+        self.colibri_start_btn = QPushButton("Start Colibri")
+        self.colibri_start_btn.setObjectName("ghostBtn")
+        self.colibri_start_btn.clicked.connect(self._on_colibri_start)
+        coli_btn_row.addWidget(self.colibri_start_btn)
+        self.colibri_stop_btn = QPushButton("Stop")
+        self.colibri_stop_btn.setObjectName("ghostBtn")
+        self.colibri_stop_btn.clicked.connect(self._on_colibri_stop)
+        coli_btn_row.addWidget(self.colibri_stop_btn)
+        self.colibri_status_btn = QPushButton("Status")
+        self.colibri_status_btn.setObjectName("ghostBtn")
+        self.colibri_status_btn.clicked.connect(self._on_colibri_status)
+        coli_btn_row.addWidget(self.colibri_status_btn)
+        coli_btn_row.addStretch()
+        llm_panel.layout.addLayout(coli_btn_row)
+
+        self.colibri_progress = QProgressBar()
+        self.colibri_progress.setRange(0, 100)
+        self.colibri_progress.setValue(0)
+        self.colibri_progress.setTextVisible(True)
+        llm_panel.layout.addWidget(self.colibri_progress)
+
+        self.colibri_log = QPlainTextEdit()
+        self.colibri_log.setObjectName("logView")
+        self.colibri_log.setReadOnly(True)
+        self.colibri_log.setMaximumHeight(110)
+        self.colibri_log.setPlaceholderText("Colibri setup / download output…")
+        llm_panel.layout.addWidget(self.colibri_log)
+
+        self.llm_autostart_check = QCheckBox("Auto-start Colibri when TradeBot opens")
+        self.llm_autostart_check.setChecked(False)
+        llm_panel.layout.addWidget(self.llm_autostart_check)
+
+        llm_url_row = QHBoxLayout()
+        url_lbl = QLabel("Base URL")
+        url_lbl.setFixedWidth(100)
+        url_lbl.setStyleSheet(f"color: {TEXT_MUTED};")
+        llm_url_row.addWidget(url_lbl)
+        self.llm_base_url_edit = QLineEdit()
+        self.llm_base_url_edit.setPlaceholderText("http://127.0.0.1:8000/v1")
+        self.llm_base_url_edit.setText("http://127.0.0.1:8000/v1")
+        llm_url_row.addWidget(self.llm_base_url_edit, stretch=1)
+        llm_panel.layout.addLayout(llm_url_row)
+
+        llm_key_row = QHBoxLayout()
+        key2_lbl = QLabel("API key")
+        key2_lbl.setFixedWidth(100)
+        key2_lbl.setStyleSheet(f"color: {TEXT_MUTED};")
+        llm_key_row.addWidget(key2_lbl)
+        self.llm_api_key_edit = QLineEdit()
+        self.llm_api_key_edit.setPlaceholderText("local (or COLI_API_KEY)")
+        self.llm_api_key_edit.setText("local")
+        llm_key_row.addWidget(self.llm_api_key_edit, stretch=1)
+        llm_panel.layout.addLayout(llm_key_row)
+
+        llm_model_row = QHBoxLayout()
+        model_lbl = QLabel("Serve model")
+        model_lbl.setFixedWidth(100)
+        model_lbl.setStyleSheet(f"color: {TEXT_MUTED};")
+        llm_model_row.addWidget(model_lbl)
+        self.llm_model_edit = QLineEdit()
+        self.llm_model_edit.setPlaceholderText("Empty = first from /v1/models")
+        llm_model_row.addWidget(self.llm_model_edit, stretch=1)
+        llm_panel.layout.addLayout(llm_model_row)
+
+        self.llm_auto_place_check = QCheckBox(
+            "Auto-place AI orders (default off — uses existing place pipeline)"
+        )
+        self.llm_auto_place_check.setChecked(False)
+        llm_panel.layout.addWidget(self.llm_auto_place_check)
+
+        self.llm_loop_check = QCheckBox("Background AI loop (service-like)")
+        self.llm_loop_check.setChecked(False)
+        llm_panel.layout.addWidget(self.llm_loop_check)
+
+        loop_row = QHBoxLayout()
+        loop_lbl = QLabel("Loop interval (min)")
+        loop_lbl.setFixedWidth(140)
+        loop_lbl.setStyleSheet(f"color: {TEXT_MUTED};")
+        loop_row.addWidget(loop_lbl)
+        self.llm_loop_interval_edit = QLineEdit("60")
+        self.llm_loop_interval_edit.setFixedWidth(80)
+        loop_row.addWidget(self.llm_loop_interval_edit)
+        loop_row.addStretch()
+        llm_panel.layout.addLayout(loop_row)
+
+        self.llm_status_check = QCheckBox("Autonomous Colibri status reports")
+        self.llm_status_check.setChecked(True)
+        llm_panel.layout.addWidget(self.llm_status_check)
+
+        status_row = QHBoxLayout()
+        status_lbl = QLabel("Status interval (min)")
+        status_lbl.setFixedWidth(140)
+        status_lbl.setStyleSheet(f"color: {TEXT_MUTED};")
+        status_row.addWidget(status_lbl)
+        self.llm_status_interval_edit = QLineEdit("15")
+        self.llm_status_interval_edit.setFixedWidth(80)
+        status_row.addWidget(self.llm_status_interval_edit)
+        status_row.addStretch()
+        llm_panel.layout.addLayout(status_row)
+        layout.addWidget(llm_panel)
+
         paths_panel = Panel("Paths")
         paths_inner = QVBoxLayout()
         paths_inner.setSpacing(4)
@@ -1300,9 +1449,132 @@ class OptionsPanel(QWidget):
         self.api_key_edit.setText(api_key)
         self.api_secret_edit.clear()
 
+    def load_llm_fields(self, llm):
+        llm = llm or {}
+        self.llm_enabled_check.setChecked(bool(llm.get("enabled", True)))
+        self.llm_base_url_edit.setText(str(llm.get("base_url") or "http://127.0.0.1:8000/v1"))
+        self.llm_api_key_edit.setText(str(llm.get("api_key") or "local"))
+        self.llm_model_edit.setText(str(llm.get("model") or ""))
+        self.llm_auto_place_check.setChecked(bool(llm.get("auto_place", False)))
+        self.llm_loop_check.setChecked(bool(llm.get("loop_enabled", False)))
+        self.llm_loop_interval_edit.setText(str(llm.get("loop_interval_minutes") or 60))
+        self.llm_status_check.setChecked(bool(llm.get("status_reports_enabled", True)))
+        self.llm_status_interval_edit.setText(str(llm.get("status_interval_minutes") or 15))
+        self.llm_autostart_check.setChecked(bool(llm.get("colibri_autostart", False)))
+        colibri_model = str(llm.get("colibri_model") or "").strip()
+        if colibri_model:
+            idx = self.colibri_model_combo.findText(colibri_model)
+            if idx < 0:
+                self.colibri_model_combo.addItem(colibri_model)
+                idx = self.colibri_model_combo.findText(colibri_model)
+            if idx >= 0:
+                self.colibri_model_combo.setCurrentIndex(idx)
+            else:
+                self.colibri_model_combo.setEditText(colibri_model)
+
+    def get_llm_fields(self):
+        try:
+            loop_mins = int(self.llm_loop_interval_edit.text().strip() or "60")
+        except ValueError:
+            loop_mins = 60
+        try:
+            status_mins = int(self.llm_status_interval_edit.text().strip() or "15")
+        except ValueError:
+            status_mins = 15
+        return {
+            "enabled": self.llm_enabled_check.isChecked(),
+            "base_url": self.llm_base_url_edit.text().strip(),
+            "api_key": self.llm_api_key_edit.text().strip() or "local",
+            "model": self.llm_model_edit.text().strip(),
+            "auto_place": self.llm_auto_place_check.isChecked(),
+            "loop_enabled": self.llm_loop_check.isChecked(),
+            "loop_interval_minutes": loop_mins,
+            "status_reports_enabled": self.llm_status_check.isChecked(),
+            "status_interval_minutes": status_mins,
+            "colibri_autostart": self.llm_autostart_check.isChecked(),
+            "colibri_model": self.get_selected_colibri_model(),
+        }
+
+    def get_hf_token_input(self):
+        return self.hf_token_edit.text().strip()
+
+    def clear_hf_token_input(self):
+        self.hf_token_edit.clear()
+
+    def get_selected_colibri_model(self):
+        text = self.colibri_model_combo.currentText().strip()
+        # Combo display may include "id — 22 GB (good)"
+        if " — " in text:
+            text = text.split(" — ", 1)[0].strip()
+        if self._colibri_model_ids and self.colibri_model_combo.currentIndex() >= 0:
+            idx = self.colibri_model_combo.currentIndex()
+            if idx < len(self._colibri_model_ids):
+                return self._colibri_model_ids[idx]
+        return text
+
+    def set_colibri_models(self, models):
+        current = self.get_selected_colibri_model()
+        self.colibri_model_combo.clear()
+        self._colibri_model_ids = []
+        for item in models or []:
+            mid = str(item.get("id") or "").strip()
+            if not mid:
+                continue
+            gb = item.get("download_gb")
+            status = item.get("status") or ""
+            rec = " ★" if item.get("recommended") else ""
+            label = f"{mid} — {gb} GB ({status}){rec}" if gb is not None else f"{mid} ({status}){rec}"
+            self._colibri_model_ids.append(mid)
+            self.colibri_model_combo.addItem(label)
+        if current:
+            for i, mid in enumerate(self._colibri_model_ids):
+                if mid == current:
+                    self.colibri_model_combo.setCurrentIndex(i)
+                    break
+            else:
+                self.colibri_model_combo.setEditText(current)
+
+    def append_colibri_log(self, line):
+        self.colibri_log.appendPlainText(str(line))
+
+    def set_colibri_progress(self, percent, text=None):
+        try:
+            value = int(percent)
+        except (TypeError, ValueError):
+            value = 0
+        self.colibri_progress.setValue(max(0, min(100, value)))
+        if text:
+            self.colibri_progress.setFormat(str(text))
+        else:
+            self.colibri_progress.setFormat("%p%")
+
     def _toggle_secret_visibility(self, show):
         mode = QLineEdit.EchoMode.Normal if show else QLineEdit.EchoMode.Password
         self.api_secret_edit.setEchoMode(mode)
+
+    def _toggle_hf_visibility(self, show):
+        mode = QLineEdit.EchoMode.Normal if show else QLineEdit.EchoMode.Password
+        self.hf_token_edit.setEchoMode(mode)
+
+    def _on_colibri_list(self):
+        if callable(self.colibri_list_requested):
+            self.colibri_list_requested()
+
+    def _on_colibri_download(self):
+        if callable(self.colibri_download_requested):
+            self.colibri_download_requested()
+
+    def _on_colibri_start(self):
+        if callable(self.colibri_start_requested):
+            self.colibri_start_requested()
+
+    def _on_colibri_stop(self):
+        if callable(self.colibri_stop_requested):
+            self.colibri_stop_requested()
+
+    def _on_colibri_status(self):
+        if callable(self.colibri_status_requested):
+            self.colibri_status_requested()
 
     def _on_save(self):
         if callable(self.save_requested):

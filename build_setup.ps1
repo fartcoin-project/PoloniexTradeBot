@@ -1,11 +1,14 @@
-﻿# Build self-contained setup-v0.1.0.exe into the project root.
+﻿# Build self-contained setup-v0.2.1.exe into the project root (onedir + Colibri payload).
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
 $projectRoot = $PSScriptRoot
 $tradebotDir = Join-Path $projectRoot "tradebot"
-$exe = Join-Path $projectRoot "TradeBot.exe"
-$setup = Join-Path $projectRoot "setup-v0.1.0.exe"
+$distRoot = Join-Path $projectRoot "dist"
+$distDir = Join-Path $distRoot "TradeBot"
+$exe = Join-Path $distDir "TradeBot.exe"
+$internalDir = Join-Path $distDir "_internal"
+$setup = Join-Path $projectRoot "setup-v0.2.1.exe"
 $iss = Join-Path $projectRoot "installer\TradeBot.iss"
 $workDir = Join-Path $tradebotDir "build"
 $buildStarted = Get-Date
@@ -57,6 +60,21 @@ if ($running.Count -gt 0) {
     Start-Sleep -Seconds 2
 }
 
+Write-Host "Staging Colibri + portable Python payload for installer..."
+$stageScript = Join-Path $projectRoot "installer\stage_colibri_payload.ps1"
+& $stageScript
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "stage_colibri_payload.ps1 failed (exit $LASTEXITCODE)"
+}
+$payloadColibri = Join-Path $projectRoot "installer\payload\colibri\c\coli"
+$payloadPython = Join-Path $projectRoot "installer\payload\python\python.exe"
+if (-not (Test-Path $payloadColibri)) {
+    Write-Error "Colibri payload missing: $payloadColibri"
+}
+if (-not (Test-Path $payloadPython)) {
+    Write-Error "Python payload missing: $payloadPython"
+}
+
 Write-Host "Installing build dependencies..."
 Push-Location $tradebotDir
 try {
@@ -71,8 +89,14 @@ try {
         Write-Error "build_assets.py failed (exit $LASTEXITCODE)"
     }
 
-    Write-Host "Building single-file TradeBot.exe (this may take a few minutes)..."
-    python -m PyInstaller tradebot.spec --noconfirm --distpath $projectRoot --workpath $workDir
+    Write-Host "Building onedir TradeBot (TradeBot.exe + _internal/)..."
+    # Clear previous dist folder (avoid locks / stale .pytest_cache leftovers)
+    if (Test-Path $distDir) {
+        Remove-Item -LiteralPath $distDir -Recurse -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 1
+    }
+    New-Item -ItemType Directory -Force -Path $distRoot | Out-Null
+    python -m PyInstaller tradebot.spec --noconfirm --distpath $distRoot --workpath $workDir --clean
     if ($LASTEXITCODE -ne 0) {
         Write-Error "PyInstaller failed (exit $LASTEXITCODE). Close TradeBot.exe if it is still running."
     }
@@ -83,6 +107,9 @@ finally {
 
 if (-not (Test-Path $exe)) {
     Write-Error "Build failed - TradeBot.exe not found at $exe"
+}
+if (-not (Test-Path $internalDir)) {
+    Write-Error "Build failed - onedir _internal folder missing at $internalDir"
 }
 
 $built = Get-Item $exe
@@ -107,7 +134,7 @@ if (-not (Test-Path $setup)) {
 
 Write-Host ""
 Write-Host "Done: $setup" -ForegroundColor Green
-Write-Host "Also built: $exe"
+Write-Host "Also built: $distDir"
 Write-Host ""
 Write-Host "Installs to: %LOCALAPPDATA%\Programs\TradeBot"
 Write-Host "Data folder: %LOCALAPPDATA%\TradeBot"

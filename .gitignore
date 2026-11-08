@@ -16,12 +16,23 @@ __pycache__/
 venv/
 .env
 
-# pyinstaller / installer
+# pyinstaller / installer build output
 tradebot/build/
 tradebot/dist/
+/dist/
 /TradeBot.exe
 /setup-v*.exe
 /installer/assets/
+/installer/payload/
+
+# local IDE / upload junk
+.cursor/
+.run/
+.tmp.driveupload/
+*.code-workspace
+
+# runtime config at repo root (dev copy)
+/config.json
 
 # IDEs
 .idea/

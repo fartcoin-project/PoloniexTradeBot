@@ -1,8 +1,8 @@
 ; TradeBot per-user installer (self-contained — no Python required on target PC)
-; Built by build_setup.ps1 → setup-v0.1.0.exe
+; Built by build_setup.ps1 → setup-v0.2.1.exe (onedir layout)
 
 #define MyAppName "TradeBot"
-#define MyAppVersion "0.1.0"
+#define MyAppVersion "0.2.1"
 #define MyAppPublisher "TradeBot"
 #define MyAppExeName "TradeBot.exe"
 #define MyAppId "{{A7E3C2B1-4D5F-6A78-9B0C-1D2E3F4A5B6C}"
@@ -36,7 +36,12 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "..\TradeBot.exe"; DestDir: "{app}"; Flags: ignoreversion
+; PyInstaller onedir: TradeBot.exe + _internal\ (no TEMP extract on start)
+Source: "..\dist\TradeBot\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Colibri runtime (no model weights — downloaded later via HuggingFace)
+Source: "payload\colibri\*"; DestDir: "{app}\colibri"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Portable CPython for coli setup/serve
+Source: "payload\python\*"; DestDir: "{app}\runtime\python"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
@@ -58,7 +63,7 @@ begin
   begin
     if MsgBox(
          'Also remove TradeBot data under AppData\Local\TradeBot?'#13#10 +
-         '(API keys, config, logs, and caches)',
+         '(API keys, HuggingFace token, config, logs, caches, and Colibri models)',
          mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES then
       DeleteUserData := True;
   end;

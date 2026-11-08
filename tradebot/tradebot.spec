@@ -1,9 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller spec — build a single TradeBot.exe
+# PyInstaller spec — onedir TradeBot (TradeBot.exe + _internal/)
+# Output via --distpath (build scripts use project/dist — NEVER project root,
+# or Windows case-insensitivity would wipe tradebot/).
 #
 #   cd tradebot
 #   pip install -r requirements-build.txt
-#   pyinstaller tradebot.spec
+#   pyinstaller tradebot.spec --distpath ../dist
 
 from pathlib import Path
 
@@ -13,8 +15,6 @@ block_cipher = None
 root = Path(SPECPATH)
 project_root = root.parent
 
-# Output directory is set by build_exe.ps1 (--distpath project root).
-# Manual build from this folder: pyinstaller tradebot.spec --noconfirm --distpath ..
 workpath = str(root / "build")
 
 qt_datas, qt_binaries, qt_hidden = collect_all("PySide6")
@@ -41,17 +41,34 @@ a = Analysis(
         "api_compat",
         "budget_helpers",
         "quote_config",
+        "llm_client",
+        "llm_config",
+        "ai_orders",
+        "ai_status",
+        "colibri_manager",
+        "httpx",
+        "httpx._transports",
+        "httpx._transports.default",
+        "httpcore",
+        "anyio",
+        "certifi",
+        "h11",
+        "idna",
+        "sniffio",
         "gui",
         "gui.app",
         "gui.service",
         "gui.log_stream",
         "gui.paths",
         "gui.panels",
+        "gui.chat_panel",
         "gui.data_store",
         "gui.budget_config",
         "gui.theme",
         "gui.widgets",
         "gui.cancel",
+        "gui.schedule",
+        "gui.schedule_config",
         "ccxt",
     ] + qt_hidden,
     hookspath=[],
@@ -68,7 +85,7 @@ a = Analysis(
         "ccxt.test",
         "ccxt.async_support",
         "ccxt.pro",
-        "__main__",  # PyInstaller adds this internally; include it so cache checks match
+        "__main__",
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
@@ -81,17 +98,13 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
     [],
+    exclude_binaries=True,
     name="TradeBot",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
-    upx_exclude=[],
-    runtime_tmpdir=None,
+    upx=False,
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
@@ -99,4 +112,15 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=str(icon_ico) if icon_ico else None,
+)
+
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=False,
+    upx=False,
+    upx_exclude=[],
+    name="TradeBot",
 )
