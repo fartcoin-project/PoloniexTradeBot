@@ -1,6 +1,7 @@
 """Tests for tradebot.order_list() preview and live placement."""
 
 import json
+import re
 from datetime import datetime, timedelta
 
 import ccxt
@@ -129,4 +130,71 @@ class TestOrderList:
 
         out = capsys.readouterr().out
         assert "Order list is empty" in out
+
+    def test_place_in_test_mode_skips_create_order(self, order_list_env, mock_polo, capsys):
+        tradebot.args.buy = False
+        tradebot.args.sell = False
+        _seed_orderlist(order_list_env, [_sample_order(side="SELL")])
+
+        tradebot.order_list(place=True)
+
+        mock_polo.create_order.assert_not_called()
+        out = capsys.readouterr().out
+        assert "TEST completed" in out
+
+    def test_preview_header_widens_order_column(self, order_list_env, capsys):
+        _seed_orderlist(order_list_env, [_sample_order(side="BUY", total=0.001)])
+
+        tradebot.order_list(place=False)
+
+        out = capsys.readouterr().out
+        header_line = next(line for line in out.splitlines() if "| Order" in line)
+        # Wider than the old 9-char Order field (right-padded to 12).
+        assert header_line.index("| Order") >= 3
+
+    def test_preview_test_mode_labels_and_total_cost(self, order_list_env, capsys):
+        tradebot.args.buy = False
+        tradebot.args.sell = False
+        _seed_orderlist(
+            order_list_env,
+            [
+                _sample_order(side="BUY", alt="ADA", total=0.001),
+                _sample_order(side="SELL", alt="ETH", total=0.002),
+            ],
+        )
+
+        tradebot.order_list(place=False)
+
+        out = capsys.readouterr().out
+        assert "TEST" in out
+        assert re.search(r"\bTest\b", out)
+        assert "Preview" not in out
+        assert "Total cost (test):" in out
+        assert "0.00300000" in out
+
+    def test_preview_live_mode_uses_preview_status(self, order_list_env, capsys):
+        tradebot.args.buy = True
+        tradebot.args.sell = True
+        _seed_orderlist(
+            order_list_env,
+            [
+                _sample_order(side="BUY", alt="ADA", total=0.001),
+                _sample_order(side="SELL", alt="ETH", total=0.0025),
+            ],
+        )
+
+        tradebot.order_list(place=False)
+
+        out = capsys.readouterr().out
+        assert "Preview" in out
+        assert "Total cost:" in out
+        assert "Total cost (test):" not in out
+        assert "0.00350000" in out
+        # Status column should not say Test when buy/sell are enabled.
+        data_lines = [
+            line for line in out.splitlines()
+            if "BUY" in line or "SELL" in line
+        ]
+        assert data_lines
+        assert all("Test" not in line for line in data_lines)
 

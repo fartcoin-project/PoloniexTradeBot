@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+import os
+
+from runtime_paths import colibri_models_dir
+
 DEFAULT_LLM = {
     "enabled": True,
     "base_url": "http://127.0.0.1:8000/v1",
     "api_key": "local",
     "model": "",
+    "models_dir": "",
     "auto_place": False,
     "loop_enabled": False,
     "loop_interval_minutes": 60,
@@ -14,7 +19,19 @@ DEFAULT_LLM = {
     "status_interval_minutes": 15,
     "colibri_autostart": False,
     "colibri_model": "",
+    "coli_vk_device": "",
 }
+
+
+def default_models_dir_candidate():
+    """Prefer TradeBot AppData models dir; else ~/colibri-models when present."""
+    appdata = colibri_models_dir()
+    if os.path.isdir(appdata):
+        return appdata
+    preferred = os.path.join(os.path.expanduser("~"), "colibri-models")
+    if os.path.isdir(preferred):
+        return preferred
+    return ""
 
 
 def normalize_llm_config(raw=None):
@@ -32,6 +49,10 @@ def normalize_llm_config(raw=None):
     out["base_url"] = base
     out["api_key"] = str(src.get("api_key") if src.get("api_key") is not None else out["api_key"]).strip() or "local"
     out["model"] = str(src.get("model") or "").strip()
+    models_dir = str(src.get("models_dir") or "").strip()
+    if not models_dir:
+        models_dir = default_models_dir_candidate()
+    out["models_dir"] = models_dir
     out["auto_place"] = bool(src.get("auto_place", False))
     out["loop_enabled"] = bool(src.get("loop_enabled", False))
     try:
@@ -49,6 +70,7 @@ def normalize_llm_config(raw=None):
     out["status_interval_minutes"] = max(1, status_mins)
     out["colibri_autostart"] = bool(src.get("colibri_autostart", False))
     out["colibri_model"] = str(src.get("colibri_model") or "").strip()
+    out["coli_vk_device"] = str(src.get("coli_vk_device") or "").strip()
     return out
 
 

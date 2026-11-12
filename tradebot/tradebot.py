@@ -51,6 +51,7 @@ class _CliArgs:
     run = None
     log = None
     budget = None
+    buy = None
     sell = None
     excl = None
 
@@ -59,6 +60,7 @@ args = _CliArgs()
 argv = []
 _cancel_check = None
 _interactive_menu = True
+_test_mode = False
 
 
 def set_cancel_check(check_fn):
@@ -70,6 +72,13 @@ def set_interactive_menu(enabled):
     """When False, order_list runs once and exits (GUI / automated runs)."""
     global _interactive_menu
     _interactive_menu = bool(enabled)
+
+
+def is_test_mode():
+    """True for GUI trade_mode=test or CLI --no-buy --no-sell."""
+    if _test_mode:
+        return True
+    return getattr(args, "buy", None) is False and args.sell is False
 
 
 def abort_if_cancelled():
@@ -97,6 +106,8 @@ def parse_cli_args():
                         help="for ₿ 0.0001 Budget input '--budget 0.0001' ")
     parser.add_argument("--sell", action=argparse.BooleanOptionalAction,
                         help=" (Sell only) or (Buy only)")
+    parser.add_argument("--buy", action=argparse.BooleanOptionalAction,
+                        help="Enable/disable buys; with --no-sell --no-buy runs TEST dry-run")
     parser.add_argument("--excl", nargs='*', required=False,
                         help="Exclude coins from bot, MUST BE LAST argument")
     args = parser.parse_args()
@@ -149,10 +160,10 @@ def get_inputs(update=False):
             if update is True:
                 print(C.F.lbl, "{:<59}".format(
                     "         your current --budget: ₿ {:<15}".format("%.8f" % float(load_botconfig["budget"]))), C.r)
-                print("                  minimum order  ₿ 0.0001 ")
+                print("                  budget >= 0 (0 sells down) ")
                 budget_input = float(input('                          Input: ₿ '))
-                if budget_input < MIN_ORDER_BTC:
-                    print(C.F.orng, f"                  minimum order is ₿ {MIN_ORDER_BTC}", C.r)
+                if budget_input < 0:
+                    print(C.F.orng, "                  budget must be >= 0 (0 sells down)", C.r)
                     continue
                 load_botconfig["budget"] = budget_input
                 with open_text('config.json', 'w') as jsonfile:
@@ -160,8 +171,8 @@ def get_inputs(update=False):
             elif args.budget is not None:
                 budget_arg = f'{args.budget}'
                 budget_in = float(budget_arg)
-                if budget_in < MIN_ORDER_BTC:
-                    print(C.F.orng, f"                  minimum order is ₿ {MIN_ORDER_BTC}", C.r)
+                if budget_in < 0:
+                    print(C.F.orng, "                  budget must be >= 0 (0 sells down)", C.r)
                     continue
                 my_budget = "%.5f" % budget_in
                 print("{:<59}".format("             __________________________________ "))
@@ -183,20 +194,24 @@ def get_inputs(update=False):
                     if args.run is True: break
                 else:
                     print("                        budget = ₿ 0.0    ")
-                    print("                  minimum order  ₿ 0.0001 ")
+                    print("                  use 0 to sell down holdings ")
                     budget_input = float(input('                          Input: ₿ '))
-                    if budget_input < MIN_ORDER_BTC:
-                        print(C.F.orng, f"                  minimum order is ₿ {MIN_ORDER_BTC}", C.r)
+                    if budget_input < 0:
+                        print(C.F.orng, "                  budget must be >= 0 (0 sells down)", C.r)
                         continue
                     load_botconfig["budget"] = budget_input
                 with open_text('config.json', 'w') as jsonfile:
                     json.dump(load_botconfig, jsonfile, indent=4)
             if args.log is True:
                 print("{:>23}".format("-log") + C.F.yel +"   Show Full Log" + C.r)
-            if args.sell is True:
+            if is_test_mode():
+                print("{:>23}".format("--no-buy --no-sell") + C.F.yel + "   TEST dry-run" + C.r)
+            elif args.sell is True:
                 print("{:>23}".format("--sell") + C.F.yel +"   Sell Only on" + C.r)
-            if args.sell is False:
+            elif args.sell is False:
                 print("{:>23}".format("--no-sell") + C.F.yel + "   Buy Only " + C.r)
+            if getattr(args, "buy", None) is True and not is_test_mode():
+                print("{:>23}".format("--buy") + C.F.yel + "   Buy enabled" + C.r)
             if args.excl is not None:
                 exclude_list = args.excl
                 exclude = [name.upper() for name in exclude_list]
@@ -456,9 +471,9 @@ Menu options:
   0  Exit
 
 Quote currency (config.json "quote_currency"):
-  BTC   — classic BTC pairs (e.g. ADA/BTC), min budget ₿ 0.0001
-  USDT  — stablecoin pairs (e.g. ADA/USDT), min budget 1 USDT
-  USDC  — same as USDT with USDC pairs, min budget 1 USDC
+  BTC   — classic BTC pairs (e.g. ADA/BTC); budget 0 sells down
+  USDT  — stablecoin pairs (e.g. ADA/USDT); budget 0 sells down
+  USDC  — same as USDT with USDC pairs; budget 0 sells down
   After changing quote, run Update Markets to rebuild pair lists.
 
 Tips:
@@ -932,8 +947,10 @@ def collect_orders(show=False):
             print("         latest prices Sell(ask)", ask, "Buy(bid)", bid)
         while True:  # Check if the alt_worth is Higher or Lower than Budget (script-input)
             try:
+                buy_only = args.sell is False and getattr(args, "buy", None) is not False
+                sell_only = args.sell is True
                 if float(alt_worth) >= float(budget_input):  # Higher = SELL
-                    if args.sell is False or is_pair_excluded(alt_coin, quote, exclude_list):
+                    if buy_only or is_pair_excluded(alt_coin, quote, exclude_list):
                         side = "exclude"
                     else:
                         side = "SELL"
@@ -942,7 +959,7 @@ def collect_orders(show=False):
                     price_list = bids
                     break  # stop if loop
                 else:
-                    if args.sell is True or is_pair_excluded(alt_coin, quote, exclude_list):
+                    if sell_only or is_pair_excluded(alt_coin, quote, exclude_list):
                         side = "exclude"
                     else:
                         side = "BUY"
@@ -1005,7 +1022,9 @@ def collect_orders(show=False):
                 if side == "exclude" or is_pair_excluded(alt_coin, quote, exclude_list):
                     print(C.F.cyn, "  ", "{:<7}".format(alt_coin), "Exclude", C.r)
                 elif min_order < order_worth:
-                    if side == "BUY":
+                    if is_test_mode():
+                        print(C.F.yel, "  ", "{:<7}".format(alt_coin), " TEST = %s" % format_quote_value(quote, order_worth), C.r)
+                    elif side == "BUY":
                         print(C.F.rd, "  ", "{:<7}".format(alt_coin), " Buy = %s" % format_quote_value(quote, order_worth), C.r)
                     else:
                         print(C.F.gr, "  ", "{:<7}".format(alt_coin), "Sell = %s" % format_quote_value(quote, order_worth), C.r)
@@ -1096,6 +1115,8 @@ def order_list(place=False):
     while True:
         try:
             global status, trade_amount, symbol, side, amount, quantity, price, total, alt, side_color
+            dry_test = bool(place) and is_test_mode()
+            do_place = bool(place) and not dry_test
             with open_text('json/orderlist.json', 'r') as open_orderlist:  # Opening JSON file
                 orders = json.load(open_orderlist)  # Reading from json file
             if not orders:
@@ -1116,15 +1137,17 @@ def order_list(place=False):
                 time_behind.append(time_item)
             lagg = ((time_behind[3] * 60 * 60) + (time_behind[4] * 60) + time_behind[5])
             print("            orders: ", max_index + 1, "     list created", lagg, "seconds ago")
-            print("{:>9}".format("| Order"), "{:>22}".format("|    Amount of altcoin "), "{:>12}".format(" |    Price   "),
+            print("{:>12}".format("| Order"), "{:>22}".format("|    Amount of altcoin "), "{:>12}".format(" |    Price   "),
                   "{:>18}".format(" |     Total     |"), " status  |")
             incomplete = []
+            cost_total = 0.0
             with open_text('config.json', 'r') as cfgfile:
                 order_cfg = json.load(cfgfile)
             order_quote = quote_from_config(order_cfg)
-            remaining_quote = load_quote_available("json/poloniex_balances.json", order_quote) if place else 0.0
+            remaining_quote = load_quote_available("json/poloniex_balances.json", order_quote) if do_place else 0.0
             order_total = max(max_index + 1, 1)
-            if place and remaining_quote > 0:
+            preview_test = (not do_place) and is_test_mode()
+            if do_place and remaining_quote > 0:
                 print(C.F.gr, "          %s free for buys: %s" % (
                     order_quote, format_quote_value(order_quote, remaining_quote)), C.r)
             while nr <= max_index:  # while = loop through PoloniexCoins List until max_index
@@ -1138,7 +1161,7 @@ def order_list(place=False):
                 price = orders[nr]['price']
                 total = orders[nr]['total']
                 alt = orders[nr]['alt']
-                if place:
+                if do_place:
                     if lagg < 360:
                         try:
                             if side == "exclude" or alt in exclude_list:
@@ -1204,22 +1227,48 @@ def order_list(place=False):
                     status = C.r + "  " + C.F.cyn + "exclude" + C.r + "   "
                     trade_amount = "{:>16}".format("      ---      ")
                 else:
-                    side_color = C.F.yel
-                    status = "  " + C.F.cyn + "exclude" + C.r + "   "
-                    status = "{:>9}".format("Test")
+                    if preview_test or dry_test:
+                        side_color = C.F.yel
+                        status = "{:>9}".format("Test")
+                    elif side == "BUY":
+                        side_color = C.F.rd
+                        status = "{:>9}".format("Preview")
+                    elif side == "SELL":
+                        side_color = C.F.gr
+                        status = "{:>9}".format("Preview")
+                    else:
+                        side_color = C.F.yel
+                        status = "{:>9}".format("Preview")
                     trade_amount = "{:>16}".format("%.8f" % amount)
+                if side not in ("exclude",) and alt not in exclude_list:
+                    try:
+                        cost_total += float(total)
+                    except (TypeError, ValueError):
+                        pass
                 tot = "  %.8f" % total
                 tot_st = tot[:8].replace("0", "*")
+                side_label = "TEST" if (dry_test or preview_test) and side in ("BUY", "SELL") else side
+                tot_display = (tot_st + tot[8:]).replace("*.", "₿ 0.")
                 print(side_color,
-                      "{:>9}".format(f"{side:>8}"), C.r,
+                      "{:>12}".format(f"{side_label:>10}"), C.r,
                       "{:>22}".format(trade_amount+f" {alt:<7}"),
                       "{:>12}".format("%.8f" % float(price)),
-                      "{:>15}".format(tot_st + C.F.dgry + tot[8:] + C.r).replace("*.", "₿ 0."),
+                      side_color, "{:>15}".format(tot_display), C.r,
                       side_color, status, C.r)
                 gui_sleep(0.1)
                 nr = nr + 1
 
-            if place:
+            if dry_test or preview_test:
+                print(C.F.yel,
+                      "  Total cost (test):", format_quote_value(order_quote, cost_total),
+                      C.r)
+            else:
+                print("  Total cost:", format_quote_value(order_quote, cost_total))
+
+            if dry_test:
+                print(C.F.yel, "  TEST completed", C.r)
+                menu()
+            elif do_place:
                 if incomplete:
                     with open_text("json/orderlist_incomplete.json", "w") as orderlist_incomplete:
                         json.dump(incomplete, orderlist_incomplete, indent=4)

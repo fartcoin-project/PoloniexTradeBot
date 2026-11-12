@@ -22,7 +22,6 @@ from gui.schedule_config import schedule_budget_from_config
 from quote_config import (  # noqa: E402
     format_markets_label,
     markets_from_config,
-    min_order_for_markets,
     primary_quote_from_config,
 )
 from runtime_paths import api_config_ready, app_dir  # noqa: E402
@@ -82,12 +81,8 @@ def main(argv=None):
 
     primary = primary_quote_from_config(cfg)
     budget = float(args.budget if args.budget is not None else schedule_budget_from_config(cfg))
-    min_ord = min_order_for_markets(markets)
-    if budget < min_ord:
-        print(
-            f"Budget {budget} is below minimum {min_ord} for selected markets.",
-            file=sys.stderr,
-        )
+    if budget < 0:
+        print("Budget must be at least 0 (use 0 to sell down holdings).", file=sys.stderr)
         return 2
 
     if args.budget is not None:

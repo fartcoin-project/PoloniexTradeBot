@@ -62,6 +62,29 @@ class TestCollectOrders:
         assert orders[0]["side"] == "SELL"
         assert orders[0]["alt"] == "ADA"
 
+    def test_collect_orders_zero_budget_sells_full_holding(self, tradebot_env):
+        seed_market_files(
+            tradebot_env,
+            coins=["ADA"],
+            balances={"BTC": ["0.01000000"], "ADA": ["200000.0"]},
+            tickers={"ADA/BTC": {"last": "0.00001000"}},
+            config={
+                "time": "",
+                "budget": 0.0,
+                "balance": "0.01",
+                "advice": 0.0,
+                "exclude": [],
+            },
+        )
+
+        tradebot.collect_orders(show=False)
+
+        orders = _load_orderlist(tradebot_env)
+        assert len(orders) == 1
+        assert orders[0]["side"] == "SELL"
+        assert orders[0]["alt"] == "ADA"
+        assert orders[0]["total"] >= MIN_ORDER_BTC
+
     def test_collect_orders_skips_excluded_coins(self, tradebot_env):
         seed_market_files(
             tradebot_env,

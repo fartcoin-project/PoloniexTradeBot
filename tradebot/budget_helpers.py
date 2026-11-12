@@ -63,21 +63,28 @@ def _quote_from_root(root):
         return "BTC"
 
 
+def _configured_budget(config, fallback):
+    """Parse config budget; 0 is valid (sell-down). Missing uses fallback."""
+    if "budget" not in config or config.get("budget") is None:
+        return max(float(fallback), 0.0)
+    return max(float(config["budget"]), 0.0)
+
+
 def coin_budget_from_config(config, coin):
     quote = quote_from_config(config)
     min_ord = min_order_for_quote(quote)
-    default = float(config.get("budget") or min_ord)
+    default = _configured_budget(config, min_ord)
     overrides = config.get("coin_budgets") or {}
     if coin in overrides:
-        return max(float(overrides[coin]), min_ord)
-    return max(default, min_ord)
+        return max(float(overrides[coin]), 0.0)
+    return default
 
 
 def normalize_coin_budgets(config, coins=None):
     """Return full map coin -> budget for GUI sliders."""
     quote = quote_from_config(config)
     min_ord = min_order_for_quote(quote)
-    default = max(float(config.get("budget") or min_ord), min_ord)
+    default = _configured_budget(config, min_ord)
     overrides = config.get("coin_budgets") or {}
     custom = set(config.get("coin_budget_custom") or [])
     if coins is None:
@@ -85,7 +92,7 @@ def normalize_coin_budgets(config, coins=None):
     result = {}
     for coin in coins:
         if coin in custom and coin in overrides:
-            result[coin] = max(float(overrides[coin]), min_ord)
+            result[coin] = max(float(overrides[coin]), 0.0)
         else:
             result[coin] = default
     return result

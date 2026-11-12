@@ -27,9 +27,16 @@ class TestCoinBudgetFromConfig:
         config = {"budget": 0.0008, "coin_budgets": {"ETH": 0.0012}}
         assert coin_budget_from_config(config, "ETH") == 0.0012
 
-    def test_enforces_minimum_order(self):
+    def test_allows_zero_budget(self):
+        config = {"budget": 0}
+        assert coin_budget_from_config(config, "ADA") == 0.0
+
+    def test_allows_budget_below_exchange_minimum(self):
         config = {"budget": 0.00001}
-        assert coin_budget_from_config(config, "ADA") == MIN_ORDER_BTC
+        assert coin_budget_from_config(config, "ADA") == 0.00001
+
+    def test_missing_budget_falls_back_to_min_order(self):
+        assert coin_budget_from_config({}, "ADA") == MIN_ORDER_BTC
 
 
 class TestNormalizeCoinBudgets:

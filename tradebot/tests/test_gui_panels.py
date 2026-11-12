@@ -137,12 +137,32 @@ class TestTradingSettingsPanel:
         assert panel.buy_check.isChecked()
         assert not panel.sell_check.isChecked()
 
-    def test_selected_markets(self, qapp):
+    def test_trade_mode_test_when_neither_checked(self, qapp):
+        panel = TradingSettingsPanel()
+        panel.set_trade_mode("test")
+        assert panel.get_trade_mode() == "test"
+        assert not panel.buy_check.isChecked()
+        assert not panel.sell_check.isChecked()
+        assert TradingSettingsPanel.trade_mode_from_checks(False, False) == "test"
+
+    def test_selected_markets_xor(self, qapp):
         panel = TradingSettingsPanel()
         panel.set_selected_markets(["USDT"])
         assert panel.get_selected_markets() == ["USDT"]
+        assert panel.budget_lbl.text() == "Budget (USDT)"
         panel.set_selected_markets(["BTC", "USDT"])
-        assert panel.get_selected_markets() == ["BTC", "USDT"]
+        assert panel.get_selected_markets() == ["BTC"]
+        assert panel.budget_lbl.text() == "Budget (BTC)"
+
+    def test_market_xor_toggle(self, qapp):
+        panel = TradingSettingsPanel()
+        panel.btc_check.setChecked(True)
+        panel.usdt_check.setChecked(True)
+        assert panel.get_selected_markets() == ["USDT"]
+        assert not panel.btc_check.isChecked()
+        panel.usdt_check.setChecked(False)
+        assert panel.get_selected_markets() == ["USDT"]
+        assert panel.usdt_check.isChecked()
 
     def test_schedule_round_trip(self, qapp):
         panel = TradingSettingsPanel()

@@ -24,7 +24,7 @@ cd tradebot
 .\build_setup.ps1
 ```
 
-Output: **`../setup-v0.1.0.exe`** (project root)
+Output: **`../setup-v0.2.3.exe`** (project root)
 
 The setup is fully self-contained: no Python or Qt install is required on the target PC.
 
@@ -66,7 +66,7 @@ python build_assets.py
 pyinstaller tradebot.spec --noconfirm --distpath ..
 ```
 
-Then compile `installer/TradeBot.iss` with Inno Setup 6 (`ISCC`) to produce `setup-v0.1.0.exe`.
+Then compile `installer/TradeBot.iss` with Inno Setup 6 (`ISCC`) to produce `setup-v0.2.3.exe`.
 
 ### Tips
 

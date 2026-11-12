@@ -18,11 +18,17 @@ class TestBotService:
         with pytest.raises(FileNotFoundError, match="Build Orders"):
             actions["preview_orders"]()
 
-    def test_save_config_rejects_budget_below_minimum(self, tradebot_env, monkeypatch):
+    def test_save_config_rejects_negative_budget(self, tradebot_env, monkeypatch):
         monkeypatch.setattr("gui.service.BOT_DIR", str(tradebot_env))
         svc = BotService(queue.Queue())
-        with pytest.raises(ValueError, match="Budget must be at least"):
-            svc.save_config(budget=0.00001, exclude=[])
+        with pytest.raises(ValueError, match="Budget must be at least 0"):
+            svc.save_config(budget=-0.1, exclude=[])
+
+    def test_save_config_allows_zero_budget(self, tradebot_env, monkeypatch):
+        monkeypatch.setattr("gui.service.BOT_DIR", str(tradebot_env))
+        svc = BotService(queue.Queue())
+        svc.save_config(budget=0.0, exclude=[], markets=["BTC"])
+        assert svc.load_config()["budget"] == 0.0
 
     def test_save_config_persists_quote_and_exclude(self, tradebot_env, monkeypatch):
         monkeypatch.setattr("gui.service.BOT_DIR", str(tradebot_env))
@@ -54,6 +60,37 @@ class TestBotService:
         monkeypatch.setattr(svc._tb, "collect_orders", lambda show=False: None)
         monkeypatch.setattr(svc._tb, "order_list", lambda place=False: None)
         assert svc.run_sync("start_bot") is True
+
+    def test_place_orders_test_mode_calls_order_list_without_place(
+        self, tradebot_env, monkeypatch
+    ):
+        monkeypatch.setattr("gui.service.BOT_DIR", str(tradebot_env))
+        monkeypatch.chdir(tradebot_env)
+        write_json(tradebot_env / "json" / "orderlist.json", [{"side": "BUY"}])
+        log_queue = queue.Queue()
+        svc = BotService(log_queue)
+        svc._ensure_loaded()
+        svc._apply_sell_mode(svc._tb, "test")
+        assert svc._tb.args.buy is False
+        assert svc._tb.args.sell is False
+        assert svc._tb._test_mode is True
+
+        calls = []
+
+        def fake_order_list(place=False):
+            calls.append(place)
+
+        monkeypatch.setattr(svc._tb, "order_list", fake_order_list)
+        monkeypatch.setattr(svc, "_maybe_status_report", lambda **kwargs: None)
+        assert svc.run_sync("place_orders") is True
+        assert calls == [False]
+        assert svc._last_cycle.get("placed") is False
+        logs = []
+        while not log_queue.empty():
+            kind, payload = log_queue.get_nowait()
+            if kind == "log":
+                logs.append(str(payload))
+        assert any("TEST completed" in line for line in logs)
 
     def test_safe_advice_stats_uses_quote_pair_file(self, tradebot_env, monkeypatch):
         monkeypatch.setattr("gui.service.BOT_DIR", str(tradebot_env))

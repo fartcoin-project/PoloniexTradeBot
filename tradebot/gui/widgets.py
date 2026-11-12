@@ -40,8 +40,9 @@ class StatCard(QFrame):
     def __init__(self, label, value="—", parent=None):
         super().__init__(parent)
         self.setObjectName("statCard")
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(14, 10, 14, 10)
+        layout.setContentsMargins(10, 6, 10, 6)
         layout.setSpacing(4)
         self.label = QLabel(label)
         self.label.setObjectName("statLabel")
@@ -215,6 +216,66 @@ class WorkflowStepList(QFrame):
         return list(self._steps.keys())
 
 
+class WorkflowStepBar(QFrame):
+    """Horizontal workflow header: compact step buttons with done markers."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setObjectName("panel")
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(6)
+        self._layout = layout
+        self._steps = {}
+        self._marks = {}
+
+    def add_step(self, step_num, label, action_id, callback, *, style=None):
+        cell = QWidget()
+        cell_layout = QHBoxLayout(cell)
+        cell_layout.setContentsMargins(0, 0, 0, 0)
+        cell_layout.setSpacing(4)
+
+        mark = QLabel("○")
+        mark.setObjectName("stepDoneMark")
+        mark.setFixedWidth(14)
+        mark.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        mark.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 11px;")
+        mark.setToolTip("Step pending")
+
+        btn = QPushButton(f"Step {step_num} — {label}")
+        btn.setObjectName(style or "sidebarBtn")
+        btn.setMinimumHeight(28)
+        btn.clicked.connect(callback)
+
+        cell_layout.addWidget(mark)
+        cell_layout.addWidget(btn, stretch=1)
+        self._layout.addWidget(cell, stretch=1)
+
+        self._steps[action_id] = btn
+        self._marks[action_id] = mark
+        return btn
+
+    def set_done(self, action_id, done):
+        mark = self._marks.get(action_id)
+        if mark is None:
+            return
+        if done:
+            mark.setText("✓")
+            mark.setStyleSheet("color: #3DDC97; font-size: 12px; font-weight: 700;")
+            mark.setToolTip("Step completed")
+        else:
+            mark.setText("○")
+            mark.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 11px;")
+            mark.setToolTip("Step pending")
+
+    def set_title(self, title):
+        """Ignored — bar has no section title (API compat with WorkflowStepList)."""
+
+    def action_ids(self):
+        return list(self._steps.keys())
+
+
 class CollapsibleSection(QFrame):
     """Dashboard section with expand/collapse header (replaces scroll areas)."""
 
@@ -222,10 +283,10 @@ class CollapsibleSection(QFrame):
         super().__init__(parent)
         self._title = title
         self.setObjectName("panel")
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(16, 10, 16, 12)
-        layout.setSpacing(8)
+        layout.setContentsMargins(10, 6, 10, 8)
+        layout.setSpacing(4)
 
         header_row = QHBoxLayout()
         header_row.setSpacing(8)
@@ -244,6 +305,14 @@ class CollapsibleSection(QFrame):
 
         layout.addLayout(header_row)
 
+        self._pinned_above = QWidget()
+        self._pinned_above.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
+        self._pinned_above_layout = QVBoxLayout(self._pinned_above)
+        self._pinned_above_layout.setContentsMargins(0, 0, 0, 0)
+        self._pinned_above_layout.setSpacing(4)
+        self._pinned_above.setVisible(False)
+        layout.addWidget(self._pinned_above, 0, Qt.AlignmentFlag.AlignTop)
+
         self._body = QWidget()
         self._body.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         self._body_layout = QVBoxLayout(self._body)
@@ -252,8 +321,24 @@ class CollapsibleSection(QFrame):
         self._body.setVisible(expanded)
         layout.addWidget(self._body, 0, Qt.AlignmentFlag.AlignTop)
 
+        self._pinned_below = QWidget()
+        self._pinned_below.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
+        self._pinned_below_layout = QVBoxLayout(self._pinned_below)
+        self._pinned_below_layout.setContentsMargins(0, 0, 0, 0)
+        self._pinned_below_layout.setSpacing(4)
+        self._pinned_below.setVisible(False)
+        layout.addWidget(self._pinned_below, 0, Qt.AlignmentFlag.AlignTop)
+
     def add_header_widget(self, widget):
         self._header_extra.addWidget(widget)
+
+    def set_pinned_above(self, widget, *, stretch=0):
+        self._pinned_above_layout.addWidget(widget, stretch)
+        self._pinned_above.setVisible(True)
+
+    def set_pinned_below(self, widget, *, stretch=0):
+        self._pinned_below_layout.addWidget(widget, stretch)
+        self._pinned_below.setVisible(True)
 
     def set_content(self, widget, *, stretch=0):
         self._body_layout.addWidget(widget, stretch)

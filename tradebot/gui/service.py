@@ -213,12 +213,22 @@ class BotService:
 
     @staticmethod
     def _apply_sell_mode(tradebot, sell_mode):
-        if sell_mode == "sell":
-            tradebot.args.sell = True
-        elif sell_mode == "buy":
+        mode = (sell_mode or "both").lower()
+        if mode == "test":
             tradebot.args.sell = False
+            tradebot.args.buy = False
+            tradebot._test_mode = True
+            return
+        tradebot._test_mode = False
+        if mode == "sell":
+            tradebot.args.sell = True
+            tradebot.args.buy = False
+        elif mode == "buy":
+            tradebot.args.sell = False
+            tradebot.args.buy = True
         else:
             tradebot.args.sell = None
+            tradebot.args.buy = None
 
     def _sync_config(self):
         cfg = self.load_config()
@@ -349,12 +359,9 @@ class BotService:
         selected = markets_from_config({"markets": markets})
         if not selected:
             raise ValueError("Select at least one market (BTC or USDT).")
-        min_ord = min_order_for_markets(selected)
         primary = selected[0]
-        if budget < min_ord:
-            raise ValueError(
-                f"Budget must be at least {format_quote_value(primary, min_ord)}"
-            )
+        if budget < 0:
+            raise ValueError("Budget must be at least 0 (use 0 to sell down holdings).")
         cfg = self.load_config()
         old_schedule = normalize_schedule(cfg.get("schedule", {}))
         old_llm = normalize_llm_config(cfg.get("llm"))
@@ -644,14 +651,28 @@ class BotService:
         if llm.get("auto_place"):
             if orders:
                 p.set_phase(90, 100)
-                print("  auto_place enabled — placing AI orders via order_list")
-                try:
-                    tb.order_list(place=True)
-                    placed = True
-                except Exception as exc:
-                    place_error = str(exc)
-                    print(f"  auto_place failed: {exc}")
-                    raise
+                test_run = bool(getattr(tb, "_test_mode", False)) or (
+                    hasattr(tb, "is_test_mode") and tb.is_test_mode()
+                )
+                if test_run:
+                    print("  TEST run (no live orders) — dry-run via order_list")
+                    try:
+                        tb.order_list(place=False)
+                        print("TEST completed")
+                        placed = False
+                    except Exception as exc:
+                        place_error = str(exc)
+                        print(f"  TEST dry-run failed: {exc}")
+                        raise
+                else:
+                    print("  auto_place enabled — placing AI orders via order_list")
+                    try:
+                        tb.order_list(place=True)
+                        placed = True
+                    except Exception as exc:
+                        place_error = str(exc)
+                        print(f"  auto_place failed: {exc}")
+                        raise
             else:
                 print("  auto_place on but no orders to place")
                 p.set_phase(100, 100)
@@ -851,14 +872,25 @@ class BotService:
             p.set_phase(0, 100)
             tb.order_list(place=False)
 
+        def _is_test_run():
+            return bool(getattr(tb, "_test_mode", False)) or (
+                hasattr(tb, "is_test_mode") and tb.is_test_mode()
+            )
+
         def place_orders():
             _require_orderlist()
             p = prog()
             p.set_phase(0, 100)
-            tb.order_list(place=True)
+            if _is_test_run():
+                tb.order_list(place=False)
+                print("TEST completed")
+                placed = False
+            else:
+                tb.order_list(place=True)
+                placed = True
             self._last_cycle = {
                 "action": "place_orders",
-                "placed": True,
+                "placed": placed,
                 "orders": len(load_orderlist(BOT_DIR) or []),
             }
             self._maybe_status_report(trigger="place_done", force=True)
@@ -872,7 +904,11 @@ class BotService:
             p.set_phase(60, 85)
             tb.collect_orders(show=False)
             p.set_phase(85, 100)
-            tb.order_list(place=True)
+            if _is_test_run():
+                tb.order_list(place=False)
+                print("TEST completed")
+            else:
+                tb.order_list(place=True)
 
         def ai_analyze():
             p = prog()
@@ -903,22 +939,45 @@ class BotService:
         def colibri_list_models():
             p = prog()
             p.set_phase(0, 100)
-            models = colibri_manager.list_models(on_line=self._colibri_line)
+            llm = self.get_llm_config()
+            models_dir = llm.get("models_dir")
+            try:
+                models = colibri_manager.list_models_merged(
+                    models_dir, on_line=self._colibri_line
+                )
+            except Exception as exc:
+                models = colibri_manager.list_local_models(models_dir)
+                print(f"  Catalog list skipped: {exc}")
+            local_n = sum(1 for m in models if m.get("local"))
             self.log_queue.put(("colibri_models", models))
-            print(f"  {len(models)} Colibri model(s) listed")
+            print(
+                f"  {local_n} local + {len(models) - local_n} catalog → {len(models)} model choice(s) "
+                f"in {colibri_manager.resolve_models_dir(models_dir)}"
+            )
 
         def colibri_download():
             p = prog()
             p.set_phase(0, 100)
-            model_id = self._pending_colibri_model or self.get_llm_config().get("colibri_model")
+            llm = self.get_llm_config()
+            model_id = self._pending_colibri_model or llm.get("colibri_model")
             self._pending_colibri_model = None
             if not model_id:
                 raise ValueError("Select a Colibri model to download")
-            print(f"  Downloading Colibri model {model_id}…")
-            colibri_manager.download_model(model_id, on_line=self._colibri_line)
+            models_dir = llm.get("models_dir")
+            if colibri_manager.model_present(models_dir, model_id):
+                print(f"  Using local model {model_id} in {models_dir}…")
+            else:
+                print(f"  Downloading Colibri model {model_id} → {models_dir}…")
+            colibri_manager.download_model(
+                model_id,
+                models_dir=models_dir,
+                on_line=self._colibri_line,
+                coli_vk_device=llm.get("coli_vk_device"),
+            )
             cfg = self.load_config()
             llm = normalize_llm_config(cfg.get("llm"))
             llm["colibri_model"] = model_id
+            llm["models_dir"] = colibri_manager.resolve_models_dir(models_dir)
             cfg["llm"] = llm
             path = os.path.join(BOT_DIR, "config.json")
             with open(path, "w", encoding="utf-8") as handle:
@@ -929,8 +988,13 @@ class BotService:
         def colibri_start():
             p = prog()
             p.set_phase(0, 100)
+            llm = self.get_llm_config()
             print("  Starting Colibri…")
-            colibri_manager.start_server(on_line=self._colibri_line)
+            colibri_manager.start_server(
+                models_dir=llm.get("models_dir"),
+                on_line=self._colibri_line,
+                coli_vk_device=llm.get("coli_vk_device"),
+            )
             self.check_colibri_health()
             print("  Colibri start requested")
 
@@ -944,10 +1008,23 @@ class BotService:
         def colibri_status():
             p = prog()
             p.set_phase(0, 100)
-            info = colibri_manager.runtime_info()
+            llm = self.get_llm_config()
+            preferred = llm.get("coli_vk_device")
+            pinned = colibri_manager.ensure_setup_vk_device(preferred)
+            info = colibri_manager.runtime_info(llm.get("models_dir"))
+            if pinned.get("name"):
+                info["setup_gpu"] = pinned["name"]
+                info["coli_vk_dev"] = str(pinned.get("index") if pinned.get("index") is not None else "")
+            if pinned.get("warning"):
+                info["gpu_warning"] = pinned["warning"]
             status = colibri_manager.status_json(on_line=self._colibri_line)
-            self.log_queue.put(("colibri_status", {"info": info, "status": status}))
-            print(json.dumps({"info": info, "status": status}, indent=2)[:2000])
+            payload = {"info": info, "status": status}
+            self.log_queue.put(("colibri_status", payload))
+            if info.get("setup_gpu"):
+                print(f"  GPU: {info.get('setup_gpu')} (COLI_VK_DEV={info.get('coli_vk_dev') or '?'})")
+            if info.get("gpu_warning"):
+                print(f"  WARNING: {info['gpu_warning']}")
+            print(json.dumps(payload, indent=2)[:2000])
 
         return {
             # CLI menu 1–6

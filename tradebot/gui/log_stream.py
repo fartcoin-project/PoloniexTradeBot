@@ -9,9 +9,65 @@ from runtime_paths import app_dir
 
 ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
 
+LOG_ORDER_BUY = "#ef5350"
+LOG_ORDER_SELL = "#66bb6a"
+LOG_ORDER_TEST = "#f0c674"
+LOG_ORDER_DEFAULT = "#c9d1d9"
+
+_ORDER_ROW_RE = re.compile(
+    r"^(?P<pre>\s*)(?P<side>BUY|SELL|TEST|exclude)"
+    r"(?P<mid>\s+.+)\s+"
+    r"(?P<total>₿\s*[\d.*]+)"
+    r"(?P<tail>\s+(?:Test|Preview|Complete|exclude|INCOMPLETE|low\s+\S+)\s*)$",
+    re.IGNORECASE,
+)
+_TOTAL_COST_RE = re.compile(
+    r"^(?P<pre>\s*Total cost(?:\s*\(test\))?:\s*)(?P<total>.+?)\s*$"
+)
+
 
 def strip_ansi(text):
     return ANSI_ESCAPE.sub("", text)
+
+
+def _escape_html(text):
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def _side_log_color(side):
+    key = (side or "").strip().upper()
+    if key == "BUY":
+        return LOG_ORDER_BUY
+    if key == "SELL":
+        return LOG_ORDER_SELL
+    if key == "TEST":
+        return LOG_ORDER_TEST
+    if key == "EXCLUDE":
+        return "#4fc3f7"
+    return LOG_ORDER_TEST
+
+
+def format_order_log_html(line, *, default_color=LOG_ORDER_DEFAULT):
+    """Return HTML for an order-table or total-cost log line, or None if not matched."""
+    text = strip_ansi(line or "")
+    cost = _TOTAL_COST_RE.match(text)
+    if cost:
+        color = LOG_ORDER_TEST if "(test)" in cost.group("pre").lower() else default_color
+        return (
+            f'<span style="color:{default_color}">{_escape_html(cost.group("pre"))}</span>'
+            f'<span style="color:{color}">{_escape_html(cost.group("total"))}</span>'
+        )
+    row = _ORDER_ROW_RE.match(text)
+    if not row:
+        return None
+    color = _side_log_color(row.group("side"))
+    return (
+        f'<span style="color:{default_color}">{_escape_html(row.group("pre"))}</span>'
+        f'<span style="color:{color}">{_escape_html(row.group("side"))}</span>'
+        f'<span style="color:{default_color}">{_escape_html(row.group("mid"))}</span>'
+        f'<span style="color:{color}">{_escape_html(row.group("total"))}</span>'
+        f'<span style="color:{default_color}">{_escape_html(row.group("tail"))}</span>'
+    )
 
 
 def read_session_log(path=None, *, errors_only=False, max_lines=2000):
@@ -163,5 +219,4 @@ class ProgressCapture:
     def __call__(self, progress):
         local = max(0.0, min(1.0, float(progress)))
         pct = self._phase_start + local * self._phase_span
-        self._log_progress_line(pct)
         self._emit(pct)

@@ -78,7 +78,7 @@ from gui.panels import (
 
 from gui.paths import app_dir, bundle_dir
 
-from gui.log_stream import SessionFileLogger
+from gui.log_stream import SessionFileLogger, format_order_log_html
 
 from gui.service import BotService
 
@@ -90,7 +90,7 @@ from gui.widgets import (
     SessionLogSidebar,
     StatCard,
     StatusPill,
-    WorkflowStepList,
+    WorkflowStepBar,
 )
 
 from quote_config import (
@@ -522,7 +522,7 @@ class TradeBotWindow(QMainWindow):
 
         side_layout = QVBoxLayout(sidebar)
 
-        side_layout.setContentsMargins(12, 16, 12, 12)
+        side_layout.setContentsMargins(10, 10, 10, 10)
 
         side_layout.setSpacing(4)
 
@@ -536,7 +536,7 @@ class TradeBotWindow(QMainWindow):
 
         side_layout.addWidget(subtitle)
 
-        side_layout.addSpacing(10)
+        side_layout.addSpacing(6)
 
 
 
@@ -544,7 +544,7 @@ class TradeBotWindow(QMainWindow):
 
         side_layout.addWidget(self.status_pill)
 
-        side_layout.addSpacing(12)
+        side_layout.addSpacing(6)
 
 
 
@@ -562,11 +562,11 @@ class TradeBotWindow(QMainWindow):
 
         run_hint = QLabel("Markets · Build · Trade")
 
-        run_hint.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 10px; padding: 0 4px 6px 4px;")
+        run_hint.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 10px; padding: 0 4px 4px 4px;")
 
         side_layout.addWidget(run_hint)
 
-        side_layout.addSpacing(8)
+        side_layout.addSpacing(4)
 
 
 
@@ -610,31 +610,29 @@ class TradeBotWindow(QMainWindow):
 
         sidebar_scroll_layout.setContentsMargins(0, 0, 0, 0)
 
-        sidebar_scroll_layout.setSpacing(10)
+        sidebar_scroll_layout.setSpacing(6)
+
+        sidebar_scroll_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
 
 
         sidebar_scroll_layout.addWidget(self.trading_settings)
 
+        sidebar_scroll_layout.addStretch(1)
 
 
-        step_num = 1
 
         initial_markets = markets_from_config(self.service.load_config())
 
+        self.workflow_bar = WorkflowStepBar()
+
+        step_num = 1
+
         for group_name, actions in MENU_GROUPS:
-
-            title = market_group_title(initial_markets) if group_name == "market" else group_name
-
-            group = WorkflowStepList(title)
-
-            if group_name == "market":
-
-                self._market_workflow_group = group
 
             for label, action, style in actions:
 
-                btn = group.add_step(
+                btn = self.workflow_bar.add_step(
 
                     step_num,
 
@@ -652,11 +650,7 @@ class TradeBotWindow(QMainWindow):
 
                 self._action_buttons.append(btn)
 
-            for action_id in group.action_ids():
-
-                self._workflow_steps[action_id] = group
-
-            sidebar_scroll_layout.addWidget(group)
+                self._workflow_steps[action] = self.workflow_bar
 
 
 
@@ -716,11 +710,15 @@ class TradeBotWindow(QMainWindow):
 
         dashboard_layout.setSpacing(10)
 
+        dashboard_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
 
 
         stats_row = QHBoxLayout()
 
         stats_row.setSpacing(10)
+
+        stats_row.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         market_label = format_markets_label(initial_markets)
 
@@ -758,6 +756,8 @@ class TradeBotWindow(QMainWindow):
 
         dashboard_layout.addWidget(self.budgets_section)
 
+        dashboard_layout.addStretch(1)
+
 
 
         dashboard_scroll = QScrollArea()
@@ -774,46 +774,11 @@ class TradeBotWindow(QMainWindow):
 
 
 
-        progress_footer = QFrame()
-
-        progress_footer.setObjectName("panel")
-
-        footer_layout = QVBoxLayout(progress_footer)
-
-        footer_layout.setContentsMargins(12, 8, 12, 10)
-
-        footer_layout.setSpacing(6)
-
-        self.status_label = QLabel("Ready")
-
-        self.status_label.setStyleSheet("font-weight: 600;")
-
-        footer_layout.addWidget(self.status_label)
-
-        self.progress = QProgressBar()
-
-        self.progress.setRange(0, 100)
-
-        self.progress.setValue(0)
-
-        self.progress.setTextVisible(True)
-
-        self.progress.setFormat("%p%")
-
-        self.progress.setFixedHeight(18)
-
-        footer_layout.addWidget(self.progress)
-
-
-
         bot_layout.addWidget(dashboard_scroll, stretch=1)
-
-        bot_layout.addWidget(progress_footer)
 
 
 
         self.wallet_panel = WalletPanel()
-
         self.wallet_panel.refresh_requested = self._refresh_wallet
 
 
@@ -894,15 +859,51 @@ class TradeBotWindow(QMainWindow):
 
 
 
+        progress_footer = QFrame()
+
+        progress_footer.setObjectName("panel")
+
+        footer_layout = QVBoxLayout(progress_footer)
+
+        footer_layout.setContentsMargins(12, 8, 12, 10)
+
+        footer_layout.setSpacing(6)
+
+        self.status_label = QLabel("Ready")
+
+        self.status_label.setStyleSheet("font-weight: 600;")
+
+        footer_layout.addWidget(self.status_label)
+
+        self.progress = QProgressBar()
+
+        self.progress.setRange(0, 100)
+
+        self.progress.setValue(0)
+
+        self.progress.setTextVisible(True)
+
+        self.progress.setFormat("%p%")
+
+        self.progress.setFixedHeight(18)
+
+        footer_layout.addWidget(self.progress)
+
+
+
         tabs_host = QWidget()
 
-        tabs_host_layout = QGridLayout(tabs_host)
+        tabs_host_layout = QVBoxLayout(tabs_host)
 
         tabs_host_layout.setContentsMargins(0, 0, 0, 0)
 
-        tabs_host_layout.setSpacing(0)
+        tabs_host_layout.setSpacing(8)
 
-        tabs_host_layout.addWidget(self.tabs, 0, 0)
+        tabs_host_layout.addWidget(self.workflow_bar)
+
+        tabs_host_layout.addWidget(progress_footer)
+
+        tabs_host_layout.addWidget(self.tabs, stretch=1)
 
 
 
@@ -1294,19 +1295,17 @@ class TradeBotWindow(QMainWindow):
 
             self.balance_card.set_label(f"{market_label} available")
 
-        min_ord = min_order_for_markets(markets)
-
         try:
 
             current = float(self.budget_edit.text())
 
         except ValueError:
 
-            current = min_ord
+            current = 0.0
 
-        if current < min_ord:
+        if current < 0:
 
-            self.budget_edit.setText(str(min_ord))
+            self.budget_edit.setText("0")
 
 
 
@@ -1352,29 +1351,11 @@ class TradeBotWindow(QMainWindow):
 
     def _on_modes_changed(self, _checked=False):
 
-        if not (
-            self.buy_mode_check.isChecked() or self.sell_mode_check.isChecked()
-        ):
+        mode = self.trading_settings.get_trade_mode()
 
-            self._append_log("Select at least one mode (Buy or Sell).", tag="error")
+        if mode == "test":
 
-            sender = self.sender()
-
-            if sender is self.buy_mode_check:
-
-                self.buy_mode_check.blockSignals(True)
-
-                self.buy_mode_check.setChecked(True)
-
-                self.buy_mode_check.blockSignals(False)
-
-            elif sender is self.sell_mode_check:
-
-                self.sell_mode_check.blockSignals(True)
-
-                self.sell_mode_check.setChecked(True)
-
-                self.sell_mode_check.blockSignals(False)
+            self._append_log("TEST run (no live orders)", tag="info")
 
 
 
@@ -1534,7 +1515,7 @@ class TradeBotWindow(QMainWindow):
 
             return
 
-        if value >= min_order_for_markets(markets):
+        if value >= 0:
 
             self.budget_panel.set_default_budget(value)
 
@@ -1628,9 +1609,7 @@ class TradeBotWindow(QMainWindow):
 
                 return False
 
-            min_ord = min_order_for_markets(markets)
-
-            if schedule["budget"] < min_ord:
+            if schedule["budget"] < 0:
 
                 if not silent:
 
@@ -1640,7 +1619,7 @@ class TradeBotWindow(QMainWindow):
 
                         "Invalid schedule",
 
-                        f"Schedule budget must be at least {min_ord}.",
+                        "Schedule budget must be at least 0 (use 0 to sell down holdings).",
 
                     )
 
@@ -1744,6 +1723,8 @@ class TradeBotWindow(QMainWindow):
 
         prefix = ""
 
+        order_html = None
+
         if tag == "error":
 
             color = DANGER
@@ -1776,9 +1757,19 @@ class TradeBotWindow(QMainWindow):
 
             color = ACCENT
 
-        safe = line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        else:
 
-        self.log_text.append(f'<span style="color:{color}">{prefix}{safe}</span>')
+            order_html = format_order_log_html(line, default_color=color)
+
+        if order_html:
+
+            self.log_text.append(order_html)
+
+        else:
+
+            safe = line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+            self.log_text.append(f'<span style="color:{color}">{prefix}{safe}</span>')
 
         self._reveal_log()
 
@@ -2139,6 +2130,20 @@ class TradeBotWindow(QMainWindow):
                 elif tag == "colibri_status":
 
                     if hasattr(self, "options_panel"):
+
+                        info = (payload or {}).get("info") or {}
+
+                        if hasattr(self.options_panel, "set_colibri_gpu_status"):
+
+                            self.options_panel.set_colibri_gpu_status(
+
+                                info.get("setup_gpu"),
+
+                                warning=info.get("gpu_warning"),
+
+                                coli_vk_dev=info.get("coli_vk_dev"),
+
+                            )
 
                         self.options_panel.append_colibri_log(
 

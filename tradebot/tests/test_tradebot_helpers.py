@@ -90,6 +90,19 @@ class TestStringAndTimeHelpers:
             assert tradebot.get_time(time_list=True) == "2026 06 13 15 30 45"
 
 
+class TestTestMode:
+    def test_is_test_mode_requires_buy_and_sell_false(self, tradebot_env):
+        tradebot.args.buy = None
+        tradebot.args.sell = False
+        assert tradebot.is_test_mode() is False
+        tradebot.args.buy = False
+        tradebot.args.sell = False
+        assert tradebot.is_test_mode() is True
+        tradebot.args.buy = True
+        tradebot.args.sell = False
+        assert tradebot.is_test_mode() is False
+
+
 class TestHelpText:
     def test_help_text_documents_cli_and_menu(self):
         text = tradebot.help_text()

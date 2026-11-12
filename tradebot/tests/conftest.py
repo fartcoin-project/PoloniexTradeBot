@@ -75,7 +75,9 @@ def tradebot_env(tmp_path, monkeypatch, mock_polo):
 
     tradebot.exclude_list = []
     tradebot.args.log = False
+    tradebot.args.buy = None
     tradebot.args.sell = None
+    tradebot._test_mode = False
     tradebot.set_cancel_check(None)
     tradebot.set_interactive_menu(True)
 
