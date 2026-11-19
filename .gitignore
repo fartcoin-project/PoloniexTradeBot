@@ -1,3 +1,58 @@
+# See https://help.github.com/articles/ignoring-files/
+
+# secrets and runtime data
+tradebot/config.json
+tradebot/tradebot_config.py
+
+# bot cache (created at runtime)
+tradebot/json/
+tradebot/orderbooks/
+logs/
+data/
+
+# python
+__pycache__/
+*.py[cod]
+venv/
+.env
+
+# pyinstaller / installer build output
+tradebot/build/
+tradebot/dist/
+/dist/
+/TradeBot.exe
+/setup-v*.exe
+/installer/assets/
+/installer/payload/
+
+# local IDE / upload junk
+.cursor/
+.run/
+.tmp.driveupload/
+*.code-workspace
+
+# runtime config at repo root (dev copy)
+/config.json
+
+# IDEs
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# removed stacks (desktop-only project)
+android/
+src/
+front/
+shared-prefs-plugin/
+node_modules/
+package.json
+package-lock.json
+angular.json
+capacitor.config.*
+ionic.config.json
 # See http://help.github.com/ignore-files/ for more about ignoring files.
 
 *.env
