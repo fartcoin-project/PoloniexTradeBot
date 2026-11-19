@@ -53,3 +53,36 @@ package-lock.json
 angular.json
 capacitor.config.*
 ionic.config.json
+# See http://help.github.com/ignore-files/ for more about ignoring files.
+
+*.env
+tradebot_config.py
+config.py.sample
+
+# compiled output
+/build
+/dist
+/venv
+/json
+/orderbooks
+/backend
+
+# dependencies
+/node_modules
+
+# IDEs and editors
+/tmp
+/out-tsc
+.project
+.classpath
+.c9/
+.settings/
+/.idea
+
+# System Files
+.DS_Store
+Thumbs.db
+/env/
+/backend/
+/front/
+/config.json
