@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSizePolicy,
     QSlider,
+    QSplitter,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -282,11 +283,12 @@ class CollapsibleSection(QFrame):
     def __init__(self, title, *, expanded=False, parent=None):
         super().__init__(parent)
         self._title = title
+        self._expanded_listeners = []
         self.setObjectName("panel")
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(10, 6, 10, 8)
-        layout.setSpacing(4)
+        self._layout = QVBoxLayout(self)
+        self._layout.setContentsMargins(10, 6, 10, 8)
+        self._layout.setSpacing(4)
 
         header_row = QHBoxLayout()
         header_row.setSpacing(8)
@@ -303,7 +305,7 @@ class CollapsibleSection(QFrame):
         self._header_extra.setSpacing(6)
         header_row.addLayout(self._header_extra)
 
-        layout.addLayout(header_row)
+        self._layout.addLayout(header_row)
 
         self._pinned_above = QWidget()
         self._pinned_above.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
@@ -311,7 +313,7 @@ class CollapsibleSection(QFrame):
         self._pinned_above_layout.setContentsMargins(0, 0, 0, 0)
         self._pinned_above_layout.setSpacing(4)
         self._pinned_above.setVisible(False)
-        layout.addWidget(self._pinned_above, 0, Qt.AlignmentFlag.AlignTop)
+        self._layout.addWidget(self._pinned_above, 0, Qt.AlignmentFlag.AlignTop)
 
         self._body = QWidget()
         self._body.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
@@ -319,7 +321,6 @@ class CollapsibleSection(QFrame):
         self._body_layout.setContentsMargins(0, 0, 0, 0)
         self._body_layout.setSpacing(8)
         self._body.setVisible(expanded)
-        layout.addWidget(self._body, 0, Qt.AlignmentFlag.AlignTop)
 
         self._pinned_below = QWidget()
         self._pinned_below.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
@@ -327,10 +328,32 @@ class CollapsibleSection(QFrame):
         self._pinned_below_layout.setContentsMargins(0, 0, 0, 0)
         self._pinned_below_layout.setSpacing(4)
         self._pinned_below.setVisible(False)
-        layout.addWidget(self._pinned_below, 0, Qt.AlignmentFlag.AlignTop)
+
+        self._content_split = QSplitter(Qt.Orientation.Vertical)
+        self._content_split.setChildrenCollapsible(True)
+        self._content_split.addWidget(self._body)
+        self._content_split.addWidget(self._pinned_below)
+        self._content_split.setStretchFactor(0, 0)
+        self._content_split.setStretchFactor(1, 1)
+        self._content_split.setVisible(True)
+        self._layout.addWidget(self._content_split, stretch=1)
+
+    def set_expanding(self, expanding=True):
+        vertical = QSizePolicy.Policy.Expanding if expanding else QSizePolicy.Policy.Maximum
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, vertical)
+        if expanding:
+            self._pinned_below.setSizePolicy(
+                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+            )
+            self._content_split.setSizePolicy(
+                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+            )
 
     def add_header_widget(self, widget):
         self._header_extra.addWidget(widget)
+
+    def add_expanded_listener(self, callback):
+        self._expanded_listeners.append(callback)
 
     def set_pinned_above(self, widget, *, stretch=0):
         self._pinned_above_layout.addWidget(widget, stretch)
@@ -366,6 +389,8 @@ class CollapsibleSection(QFrame):
         if open_section:
             self._body.updateGeometry()
             self.updateGeometry()
+        for callback in self._expanded_listeners:
+            callback(open_section)
 
 
 class SessionLogSidebar(QFrame):

@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 import threading
+import time
 from typing import Callable, Optional
 
 from runtime_paths import (
@@ -97,6 +98,14 @@ def resolve_coli_script() -> str:
     return os.path.join(resolve_colibri_root(), "c", "coli")
 
 
+_MODEL_DIR_MARKERS = (
+    "config.json",
+    "tokenizer.json",
+    "tokenizer.model",
+    ".coli_usage",
+)
+
+
 def default_models_dir() -> str:
     """Prefer TradeBot AppData models dir; fall back to ~/colibri-models."""
     appdata = colibri_models_dir()
@@ -108,15 +117,77 @@ def default_models_dir() -> str:
     return appdata
 
 
-def resolve_models_dir(models_dir=None) -> str:
+def _path_is_model_dir(path: str) -> bool:
+    """True when path looks like a single model folder (not a models root)."""
+    if not path or not os.path.isdir(path):
+        return False
+    try:
+        names = os.listdir(path)
+    except OSError:
+        return False
+    name_set = set(names)
+    if any(marker in name_set for marker in _MODEL_DIR_MARKERS):
+        return True
+    for name in names:
+        lower = name.lower()
+        if lower.endswith((".safetensors", ".bin", ".gguf", ".pt", ".ggml")):
+            return True
+    return False
+
+
+def _models_root_has_content(path: str) -> bool:
+    if not path or not os.path.isdir(path):
+        return False
+    try:
+        for name in os.listdir(path):
+            if name.startswith("."):
+                continue
+            child = os.path.join(path, name)
+            if os.path.isdir(child) and (
+                _path_is_model_dir(child) or _dir_looks_like_model(child)
+            ):
+                return True
+    except OSError:
+        return False
+    return False
+
+
+def normalize_models_dir(models_dir=None, *, create: bool = False) -> str:
+    """Return a models *root* path (not a model subfolder).
+
+    - Peels leaf model directories (e.g. .../colibri-models/qwen36-35b → parent)
+    - Rewrites ~/colibri-models → AppData TradeBot models when AppData has models
+    """
     path = str(models_dir or "").strip()
     if not path:
         path = default_models_dir()
     if not path:
         path = colibri_models_dir()
     path = os.path.abspath(os.path.expanduser(path))
-    os.makedirs(path, exist_ok=True)
+
+    # Peel accidental model-subdirectory selections
+    while _path_is_model_dir(path):
+        parent = os.path.dirname(path)
+        if not parent or parent == path:
+            break
+        path = parent
+
+    home = os.path.abspath(os.path.join(os.path.expanduser("~"), "colibri-models"))
+    appdata = os.path.abspath(colibri_models_dir())
+    if (
+        os.path.normcase(path) == os.path.normcase(home)
+        and os.path.isdir(appdata)
+        and _models_root_has_content(appdata)
+    ):
+        path = appdata
+
+    if create:
+        os.makedirs(path, exist_ok=True)
     return path
+
+
+def resolve_models_dir(models_dir=None) -> str:
+    return normalize_models_dir(models_dir, create=True)
 
 
 def ensure_data_dirs(models_dir=None):
@@ -676,6 +747,39 @@ def start_server(
             )
         return out2
     return out
+
+
+def wait_until_ready(
+    base_url: str,
+    api_key: str = "local",
+    *,
+    timeout_s: float = 300.0,
+    interval_s: float = 2.0,
+    on_line: ProgressCallback = None,
+) -> dict:
+    """Poll Colibri /health (+ models) until ready or timeout.
+
+    Returns the last health_check result dict ({ok, detail, models?}).
+    """
+    from llm_client import health_check
+
+    deadline = time.monotonic() + max(1.0, float(timeout_s))
+    interval = max(0.2, float(interval_s))
+    last: dict = {"ok": False, "detail": "not checked", "models": []}
+    while True:
+        last = health_check(base_url, api_key, timeout=min(5.0, interval + 1.0))
+        if last.get("ok"):
+            if on_line:
+                on_line(f"Colibri ready: {last.get('detail') or 'ok'}")
+            return last
+        if on_line:
+            on_line(f"Waiting for Colibri… {last.get('detail') or 'not ready'}")
+        if time.monotonic() >= deadline:
+            break
+        time.sleep(interval)
+    if on_line:
+        on_line(f"Colibri not ready after {timeout_s:.0f}s: {last.get('detail')}")
+    return last
 
 
 def stop_server(on_line: ProgressCallback = None) -> str:

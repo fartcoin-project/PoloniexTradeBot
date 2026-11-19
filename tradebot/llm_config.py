@@ -17,6 +17,8 @@ DEFAULT_LLM = {
     "loop_interval_minutes": 60,
     "status_reports_enabled": True,
     "status_interval_minutes": 15,
+    # Local thinking models (e.g. qwen3.6) often need several minutes per call.
+    "request_timeout_seconds": 300,
     "colibri_autostart": False,
     "colibri_model": "",
     "coli_vk_device": "",
@@ -52,6 +54,11 @@ def normalize_llm_config(raw=None):
     models_dir = str(src.get("models_dir") or "").strip()
     if not models_dir:
         models_dir = default_models_dir_candidate()
+    if models_dir:
+        # Lazy import avoids circular import at module load
+        from colibri_manager import normalize_models_dir
+
+        models_dir = normalize_models_dir(models_dir, create=False)
     out["models_dir"] = models_dir
     out["auto_place"] = bool(src.get("auto_place", False))
     out["loop_enabled"] = bool(src.get("loop_enabled", False))
@@ -68,6 +75,14 @@ def normalize_llm_config(raw=None):
     except (TypeError, ValueError):
         status_mins = out["status_interval_minutes"]
     out["status_interval_minutes"] = max(1, status_mins)
+    try:
+        req_timeout = float(
+            src.get("request_timeout_seconds", out["request_timeout_seconds"])
+        )
+    except (TypeError, ValueError):
+        req_timeout = float(out["request_timeout_seconds"])
+    # Floor keeps short unit-test overrides valid; ceiling avoids unbounded hangs.
+    out["request_timeout_seconds"] = max(30.0, min(1800.0, req_timeout))
     out["colibri_autostart"] = bool(src.get("colibri_autostart", False))
     out["colibri_model"] = str(src.get("colibri_model") or "").strip()
     out["coli_vk_device"] = str(src.get("coli_vk_device") or "").strip()

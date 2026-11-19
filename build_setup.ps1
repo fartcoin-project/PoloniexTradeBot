@@ -1,4 +1,4 @@
-﻿# Build self-contained setup-v0.2.3.exe into the project root (onedir + Colibri payload).
+﻿# Build self-contained setup-v0.2.6.exe into the project root (onedir + Colibri payload).
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
@@ -8,7 +8,7 @@ $distRoot = Join-Path $projectRoot "dist"
 $distDir = Join-Path $distRoot "TradeBot"
 $exe = Join-Path $distDir "TradeBot.exe"
 $internalDir = Join-Path $distDir "_internal"
-$setup = Join-Path $projectRoot "setup-v0.2.3.exe"
+$setup = Join-Path $projectRoot "setup-v0.2.6.exe"
 $iss = Join-Path $projectRoot "installer\TradeBot.iss"
 $workDir = Join-Path $tradebotDir "build"
 $buildStarted = Get-Date

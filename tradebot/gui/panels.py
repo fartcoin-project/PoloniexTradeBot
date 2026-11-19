@@ -1251,6 +1251,7 @@ class OptionsPanel(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 8, 4, 4)
         layout.setSpacing(10)
+        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         api_body = QWidget()
         api_layout = QVBoxLayout(api_body)
@@ -1293,7 +1294,6 @@ class OptionsPanel(QWidget):
         api_layout.addLayout(api_actions)
         self.api_section = CollapsibleSection("API credentials", expanded=False)
         self.api_section.set_content(api_body)
-        layout.addWidget(self.api_section)
 
         prefs_body = QWidget()
         prefs_layout = QVBoxLayout(prefs_body)
@@ -1310,7 +1310,13 @@ class OptionsPanel(QWidget):
         prefs_layout.addLayout(prefs_row)
         self.prefs_section = CollapsibleSection("Preferences", expanded=False)
         self.prefs_section.set_content(prefs_body)
-        layout.addWidget(self.prefs_section)
+
+        top_row = QHBoxLayout()
+        top_row.setSpacing(10)
+        top_row.setAlignment(Qt.AlignmentFlag.AlignTop)
+        top_row.addWidget(self.api_section, stretch=1, alignment=Qt.AlignmentFlag.AlignTop)
+        top_row.addWidget(self.prefs_section, stretch=1, alignment=Qt.AlignmentFlag.AlignTop)
+        layout.addLayout(top_row)
 
         self.colibri_list_requested = None
         self.colibri_download_requested = None
@@ -1325,9 +1331,9 @@ class OptionsPanel(QWidget):
             lbl.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 11px;")
             return lbl
 
-        def _compact_field(label, editor, *, trailing=None, max_width=200):
+        def _compact_field(label, editor, *, trailing=None):
             cell = QWidget()
-            cell.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
+            cell.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
             cell_layout = QVBoxLayout(cell)
             cell_layout.setContentsMargins(0, 0, 0, 0)
             cell_layout.setSpacing(2)
@@ -1335,29 +1341,70 @@ class OptionsPanel(QWidget):
             row = QHBoxLayout()
             row.setContentsMargins(0, 0, 0, 0)
             row.setSpacing(4)
-            editor.setMaximumWidth(max_width)
-            row.addWidget(editor)
+            editor.setMaximumWidth(16777215)
+            row.addWidget(editor, stretch=1)
             if trailing is not None:
                 row.addWidget(trailing)
-            row.addStretch()
             cell_layout.addLayout(row)
             return cell
 
-        # Pinned above (always visible): enable
+        # Pinned above: enable + action buttons + progress/status
         llm_pinned_above = QWidget()
         llm_pinned_above.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         pinned_above_layout = QVBoxLayout(llm_pinned_above)
         pinned_above_layout.setContentsMargins(0, 0, 0, 0)
         pinned_above_layout.setSpacing(4)
+
+        enable_row = QHBoxLayout()
+        enable_row.setSpacing(8)
         self.llm_enabled_check = QCheckBox("Enable Colibri integration")
         self.llm_enabled_check.setChecked(True)
-        pinned_above_layout.addWidget(self.llm_enabled_check)
+        enable_row.addWidget(self.llm_enabled_check)
+        enable_row.addStretch(1)
 
-        # Collapsible body (red): compact input rows + automation
+        self.colibri_download_btn = QPushButton("Download / setup model")
+        self.colibri_download_btn.setObjectName("ghostBtn")
+        self.colibri_download_btn.clicked.connect(self._on_colibri_download)
+        enable_row.addWidget(self.colibri_download_btn)
+        self.colibri_start_btn = QPushButton("Start Colibri")
+        self.colibri_start_btn.setObjectName("ghostBtn")
+        self.colibri_start_btn.clicked.connect(self._on_colibri_start)
+        enable_row.addWidget(self.colibri_start_btn)
+        self.colibri_stop_btn = QPushButton("Stop")
+        self.colibri_stop_btn.setObjectName("ghostBtn")
+        self.colibri_stop_btn.clicked.connect(self._on_colibri_stop)
+        enable_row.addWidget(self.colibri_stop_btn)
+        self.colibri_status_btn = QPushButton("Status")
+        self.colibri_status_btn.setObjectName("ghostBtn")
+        self.colibri_status_btn.clicked.connect(self._on_colibri_status)
+        enable_row.addWidget(self.colibri_status_btn)
+        pinned_above_layout.addLayout(enable_row)
+
+        self.colibri_progress = QProgressBar()
+        self.colibri_progress.setRange(0, 100)
+        self.colibri_progress.setValue(0)
+        self.colibri_progress.setTextVisible(True)
+        pinned_above_layout.addWidget(self.colibri_progress)
+
+        self.colibri_gpu_label = QLabel("")
+        self.colibri_gpu_label.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 11px;")
+        self.colibri_gpu_label.setWordWrap(True)
+        pinned_above_layout.addWidget(self.colibri_gpu_label)
+
+        # Collapsible body: 3 columns x 3 rows (full-width inputs)
         llm_body = QWidget()
         llm_layout = QVBoxLayout(llm_body)
         llm_layout.setContentsMargins(0, 0, 0, 0)
         llm_layout.setSpacing(6)
+
+        def _column():
+            col = QWidget()
+            col.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
+            col_layout = QVBoxLayout(col)
+            col_layout.setContentsMargins(0, 0, 0, 0)
+            col_layout.setSpacing(6)
+            col_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+            return col, col_layout
 
         self.llm_models_dir_edit = QLineEdit()
         self.llm_models_dir_edit.setPlaceholderText("Empty = AppData models")
@@ -1380,35 +1427,6 @@ class OptionsPanel(QWidget):
         self.colibri_refresh_btn.setObjectName("ghostBtn")
         self.colibri_refresh_btn.clicked.connect(self._on_colibri_list)
 
-        inputs_row1 = QHBoxLayout()
-        inputs_row1.setSpacing(8)
-        inputs_row1.addWidget(
-            _compact_field(
-                "Models folder",
-                self.llm_models_dir_edit,
-                trailing=self.llm_models_dir_browse_btn,
-                max_width=200,
-            )
-        )
-        inputs_row1.addWidget(
-            _compact_field(
-                "HF token",
-                self.hf_token_edit,
-                trailing=self.show_hf_check,
-                max_width=200,
-            )
-        )
-        inputs_row1.addWidget(
-            _compact_field(
-                "Model",
-                self.colibri_model_combo,
-                trailing=self.colibri_refresh_btn,
-                max_width=220,
-            )
-        )
-        inputs_row1.addStretch()
-        llm_layout.addLayout(inputs_row1)
-
         self.llm_base_url_edit = QLineEdit()
         self.llm_base_url_edit.setPlaceholderText("http://127.0.0.1:8000/v1")
         self.llm_base_url_edit.setText("http://127.0.0.1:8000/v1")
@@ -1420,105 +1438,120 @@ class OptionsPanel(QWidget):
         self.llm_coli_vk_device_edit = QLineEdit()
         self.llm_coli_vk_device_edit.setPlaceholderText("Empty = prefer Intel Arc")
 
-        inputs_row2 = QHBoxLayout()
-        inputs_row2.setSpacing(8)
-        inputs_row2.addWidget(_compact_field("Base URL", self.llm_base_url_edit, max_width=200))
-        inputs_row2.addWidget(_compact_field("API key", self.llm_api_key_edit, max_width=200))
-        inputs_row2.addWidget(_compact_field("Serve model", self.llm_model_edit, max_width=200))
-        inputs_row2.addWidget(
-            _compact_field("Vulkan GPU", self.llm_coli_vk_device_edit, max_width=200)
+        col1, col1_layout = _column()
+        col1_layout.addWidget(
+            _compact_field(
+                "Models folder",
+                self.llm_models_dir_edit,
+                trailing=self.llm_models_dir_browse_btn,
+            )
         )
-        inputs_row2.addStretch()
-        llm_layout.addLayout(inputs_row2)
+        col1_layout.addWidget(
+            _compact_field(
+                "HF token",
+                self.hf_token_edit,
+                trailing=self.show_hf_check,
+            )
+        )
+        col1_layout.addWidget(
+            _compact_field(
+                "Model",
+                self.colibri_model_combo,
+                trailing=self.colibri_refresh_btn,
+            )
+        )
 
-        self.colibri_gpu_label = QLabel("")
-        self.colibri_gpu_label.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 11px;")
-        self.colibri_gpu_label.setWordWrap(True)
-        llm_layout.addWidget(self.colibri_gpu_label)
+        col2, col2_layout = _column()
+        col2_layout.addWidget(_compact_field("Base URL", self.llm_base_url_edit))
+        col2_layout.addWidget(_compact_field("API key", self.llm_api_key_edit))
+        serve_vulkan = QWidget()
+        serve_vulkan.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
+        serve_vulkan_layout = QVBoxLayout(serve_vulkan)
+        serve_vulkan_layout.setContentsMargins(0, 0, 0, 0)
+        serve_vulkan_layout.setSpacing(4)
+        serve_vulkan_layout.addWidget(_compact_field("Serve model", self.llm_model_edit))
+        serve_vulkan_layout.addWidget(_compact_field("Vulkan GPU", self.llm_coli_vk_device_edit))
+        col2_layout.addWidget(serve_vulkan)
 
         self.llm_auto_place_check = QCheckBox(
             "Auto-place AI orders (default off — uses existing place pipeline)"
         )
         self.llm_auto_place_check.setChecked(False)
-        llm_layout.addWidget(self.llm_auto_place_check)
 
         self.llm_loop_check = QCheckBox("Background AI loop (service-like)")
         self.llm_loop_check.setChecked(False)
-        llm_layout.addWidget(self.llm_loop_check)
-
-        loop_row = QHBoxLayout()
+        loop_row = QWidget()
+        loop_row.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
+        loop_layout = QVBoxLayout(loop_row)
+        loop_layout.setContentsMargins(0, 0, 0, 0)
+        loop_layout.setSpacing(2)
+        loop_layout.addWidget(self.llm_loop_check)
+        loop_interval_row = QHBoxLayout()
         loop_lbl = QLabel("Loop interval (min)")
         loop_lbl.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 11px;")
-        loop_row.addWidget(loop_lbl)
+        loop_interval_row.addWidget(loop_lbl)
         self.llm_loop_interval_edit = QLineEdit("60")
         self.llm_loop_interval_edit.setFixedWidth(80)
-        loop_row.addWidget(self.llm_loop_interval_edit)
-        loop_row.addStretch()
-        llm_layout.addLayout(loop_row)
+        loop_interval_row.addWidget(self.llm_loop_interval_edit)
+        loop_interval_row.addStretch()
+        loop_layout.addLayout(loop_interval_row)
 
         self.llm_status_check = QCheckBox("Autonomous Colibri status reports")
         self.llm_status_check.setChecked(True)
-        llm_layout.addWidget(self.llm_status_check)
-
-        status_row = QHBoxLayout()
+        status_row = QWidget()
+        status_row.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
+        status_layout = QVBoxLayout(status_row)
+        status_layout.setContentsMargins(0, 0, 0, 0)
+        status_layout.setSpacing(2)
+        status_layout.addWidget(self.llm_status_check)
+        status_interval_row = QHBoxLayout()
         status_lbl = QLabel("Status interval (min)")
         status_lbl.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 11px;")
-        status_row.addWidget(status_lbl)
+        status_interval_row.addWidget(status_lbl)
         self.llm_status_interval_edit = QLineEdit("15")
         self.llm_status_interval_edit.setFixedWidth(80)
-        status_row.addWidget(self.llm_status_interval_edit)
-        status_row.addStretch()
-        llm_layout.addLayout(status_row)
+        status_interval_row.addWidget(self.llm_status_interval_edit)
+        status_interval_row.addStretch()
+        status_layout.addLayout(status_interval_row)
 
-        # Pinned below (always visible): actions + log + autostart
+        col3, col3_layout = _column()
+        col3_layout.addWidget(self.llm_auto_place_check)
+        col3_layout.addWidget(loop_row)
+        col3_layout.addWidget(status_row)
+
+        grid_row = QHBoxLayout()
+        grid_row.setSpacing(12)
+        grid_row.setAlignment(Qt.AlignmentFlag.AlignTop)
+        grid_row.addWidget(col1, stretch=1, alignment=Qt.AlignmentFlag.AlignTop)
+        grid_row.addWidget(col2, stretch=1, alignment=Qt.AlignmentFlag.AlignTop)
+        grid_row.addWidget(col3, stretch=1, alignment=Qt.AlignmentFlag.AlignTop)
+        llm_layout.addLayout(grid_row)
+
+        # Pinned below: log (stretch) + autostart
         llm_pinned_below = QWidget()
-        llm_pinned_below.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
+        llm_pinned_below.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         pinned_below_layout = QVBoxLayout(llm_pinned_below)
         pinned_below_layout.setContentsMargins(0, 0, 0, 0)
         pinned_below_layout.setSpacing(4)
 
-        coli_btn_row = QHBoxLayout()
-        self.colibri_download_btn = QPushButton("Download / setup model")
-        self.colibri_download_btn.setObjectName("ghostBtn")
-        self.colibri_download_btn.clicked.connect(self._on_colibri_download)
-        coli_btn_row.addWidget(self.colibri_download_btn)
-        self.colibri_start_btn = QPushButton("Start Colibri")
-        self.colibri_start_btn.setObjectName("ghostBtn")
-        self.colibri_start_btn.clicked.connect(self._on_colibri_start)
-        coli_btn_row.addWidget(self.colibri_start_btn)
-        self.colibri_stop_btn = QPushButton("Stop")
-        self.colibri_stop_btn.setObjectName("ghostBtn")
-        self.colibri_stop_btn.clicked.connect(self._on_colibri_stop)
-        coli_btn_row.addWidget(self.colibri_stop_btn)
-        self.colibri_status_btn = QPushButton("Status")
-        self.colibri_status_btn.setObjectName("ghostBtn")
-        self.colibri_status_btn.clicked.connect(self._on_colibri_status)
-        coli_btn_row.addWidget(self.colibri_status_btn)
-        coli_btn_row.addStretch()
-        pinned_below_layout.addLayout(coli_btn_row)
-
-        self.colibri_progress = QProgressBar()
-        self.colibri_progress.setRange(0, 100)
-        self.colibri_progress.setValue(0)
-        self.colibri_progress.setTextVisible(True)
-        pinned_below_layout.addWidget(self.colibri_progress)
-
         self.colibri_log = QPlainTextEdit()
         self.colibri_log.setObjectName("logView")
         self.colibri_log.setReadOnly(True)
-        self.colibri_log.setMinimumHeight(220)
+        self.colibri_log.setMinimumHeight(120)
+        self.colibri_log.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.colibri_log.setPlaceholderText("Colibri setup / download output…")
-        pinned_below_layout.addWidget(self.colibri_log)
+        pinned_below_layout.addWidget(self.colibri_log, stretch=1)
 
         self.llm_autostart_check = QCheckBox("Auto-start Colibri when TradeBot opens")
         self.llm_autostart_check.setChecked(False)
         pinned_below_layout.addWidget(self.llm_autostart_check)
 
         self.llm_section = CollapsibleSection("Colibri / local LLM", expanded=False)
+        self.llm_section.set_expanding(True)
         self.llm_section.set_pinned_above(llm_pinned_above)
         self.llm_section.set_content(llm_body)
         self.llm_section.set_pinned_below(llm_pinned_below)
-        layout.addWidget(self.llm_section)
+        layout.addWidget(self.llm_section, stretch=1)
 
         paths_body = QWidget()
         paths_layout = QVBoxLayout(paths_body)
@@ -1576,7 +1609,23 @@ class OptionsPanel(QWidget):
         log_layout.addWidget(self.log_view, stretch=1)
         self.log_section = CollapsibleSection("Error log", expanded=False)
         self.log_section.set_content(log_body, stretch=1)
-        layout.addWidget(self.log_section, stretch=1)
+        self.log_section.add_expanded_listener(lambda _open: self._sync_error_log_min_height())
+        layout.addWidget(self.log_section)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._sync_error_log_min_height()
+
+    def _sync_error_log_min_height(self):
+        if not hasattr(self, "log_section"):
+            return
+        if self.log_section.is_expanded():
+            min_h = max(120, int(self.height() * 0.30))
+            self.log_section.setMinimumHeight(min_h)
+            self.log_view.setMinimumHeight(max(80, min_h - 60))
+        else:
+            self.log_section.setMinimumHeight(0)
+            self.log_view.setMinimumHeight(0)
 
     def set_paths(self, log_path, data_dir):
         self.log_path_label.setText(log_path)

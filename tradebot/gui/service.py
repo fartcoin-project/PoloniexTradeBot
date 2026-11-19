@@ -87,6 +87,7 @@ class BotService:
         self._current_action = None
         self._last_cycle = {}
         self._colibri_was_down = False
+        self._colibri_starting_until = 0.0
         self._pending_chat = None
         self._pending_colibri_model = None
         self._loop_stop = threading.Event()
@@ -520,6 +521,7 @@ class BotService:
         llm = self.get_llm_config()
         if not llm["enabled"]:
             raise LlmError("LLM is disabled in config")
+        timeout_s = float(llm.get("request_timeout_seconds") or 300.0)
         return chat_completions(
             messages,
             base_url=llm["base_url"],
@@ -528,6 +530,7 @@ class BotService:
             enable_thinking=enable_thinking,
             reasoning_effort=reasoning_effort,
             max_tokens=max_tokens,
+            timeout=timeout_s,
         )
 
     def _emit_chat(self, role, content, msg_type="chat"):
@@ -535,7 +538,25 @@ class BotService:
         self.log_queue.put(("chat", entry))
         return entry
 
-    def check_colibri_health(self):
+    def _persist_llm_models_dir(self, models_dir):
+        """Write normalized models_dir back into config.json when it changed."""
+        resolved = colibri_manager.normalize_models_dir(models_dir, create=True)
+        cfg = self.load_config()
+        llm = normalize_llm_config(cfg.get("llm"))
+        if llm.get("models_dir") == resolved:
+            return resolved
+        llm["models_dir"] = resolved
+        cfg["llm"] = llm
+        path = os.path.join(BOT_DIR, "config.json")
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(cfg, handle, indent=4)
+        self._emit_config()
+        return resolved
+
+    def colibri_starting(self) -> bool:
+        return time.time() < float(self._colibri_starting_until or 0.0)
+
+    def check_colibri_health(self, *, emit_status: bool = True):
         llm = self.get_llm_config()
         result = health_check(llm["base_url"], llm["api_key"])
         was_down = self._colibri_was_down
@@ -546,7 +567,13 @@ class BotService:
             "models": result.get("models") or [],
             "llm": llm,
         }))
-        if was_down and result.get("ok") and llm.get("status_reports_enabled"):
+        if (
+            emit_status
+            and was_down
+            and result.get("ok")
+            and llm.get("status_reports_enabled")
+            and not self.colibri_starting()
+        ):
             self._maybe_status_report(trigger="colibri_up", force=True)
         return result
 
@@ -579,7 +606,6 @@ class BotService:
         result = self._llm_call(
             messages_for_analyze(snapshot),
             enable_thinking=True,
-            reasoning_effort="medium",
         )
         if result.get("thinking"):
             self._file_log.write_line("ai_thinking", result["thinking"][:4000])
@@ -633,6 +659,30 @@ class BotService:
         p = self._progress_capture
         tb = self._tb
         llm = self.get_llm_config()
+        # #region agent log
+        try:
+            import json as _json
+            _dbg = {
+                "sessionId": "8cfbd5",
+                "hypothesisId": "A,C,E",
+                "location": "service.py:_ai_rebalance_impl:start",
+                "message": "ai_rebalance_impl starting",
+                "data": {
+                    "auto_place": bool(llm.get("auto_place")),
+                    "model": llm.get("model") or "",
+                    "base_url": llm.get("base_url") or "",
+                    "loop_enabled": bool(llm.get("loop_enabled")),
+                    "status_reports_enabled": bool(llm.get("status_reports_enabled")),
+                },
+                "timestamp": int(time.time() * 1000),
+            }
+            with open(
+                r"c:\workspace\projects\TradeBot\debug-8cfbd5.log", "a", encoding="utf-8"
+            ) as _hf:
+                _hf.write(_json.dumps(_dbg, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
+        # #endregion
         p.set_phase(0, 35)
         tb.get_update(show=False)
         p.set_phase(35, 45)
@@ -643,6 +693,24 @@ class BotService:
         except Exception:
             pass
         p.set_phase(55, 75)
+        # #region agent log
+        try:
+            import json as _json
+            _dbg = {
+                "sessionId": "8cfbd5",
+                "hypothesisId": "A",
+                "location": "service.py:_ai_rebalance_impl:before_analyze",
+                "message": "about to call _ai_analyze_impl",
+                "data": {"phase": "55-75"},
+                "timestamp": int(time.time() * 1000),
+            }
+            with open(
+                r"c:\workspace\projects\TradeBot\debug-8cfbd5.log", "a", encoding="utf-8"
+            ) as _hf:
+                _hf.write(_json.dumps(_dbg, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
+        # #endregion
         analysis = self._ai_analyze_impl()
         p.set_phase(75, 90)
         orders = self._ai_propose_impl()
@@ -704,15 +772,17 @@ class BotService:
             )
             return None
         snapshot = self._snapshot_for_llm(extra={"trigger": trigger})
+        timeout_s = float(llm.get("request_timeout_seconds") or 300.0)
+        # Status heartbeats must stay reliable on local qwen36; thinking mode
+        # previously timed out even on tiny prompts (see debug session 8cfbd5).
         result = chat_completions(
             messages_for_status(snapshot, trigger=trigger),
             base_url=llm["base_url"],
             api_key=llm["api_key"],
             model=llm["model"],
-            enable_thinking=True,
-            reasoning_effort="medium",
+            enable_thinking=False,
             max_tokens=1024,
-            timeout=60.0,
+            timeout=timeout_s,
         )
         if result.get("thinking"):
             self._file_log.write_line("ai_thinking", result["thinking"][:4000])
@@ -728,6 +798,8 @@ class BotService:
     def _maybe_status_report(self, trigger="heartbeat", force=False):
         llm = self.get_llm_config()
         if not llm.get("enabled") or not llm.get("status_reports_enabled"):
+            return
+        if self.colibri_starting():
             return
         if not force and not self._ai_store.should_emit_status(60.0):
             return
@@ -750,7 +822,6 @@ class BotService:
         result = self._llm_call(
             messages_for_chat(text, snapshot),
             enable_thinking=True,
-            reasoning_effort="medium",
         )
         if result.get("thinking"):
             self._file_log.write_line("ai_thinking", result["thinking"][:4000])
@@ -784,7 +855,16 @@ class BotService:
                 interval = max(1, int(llm.get("loop_interval_minutes") or 60)) * 60
                 action = "ai_rebalance_cycle" if llm.get("enabled") else "start_bot"
                 try:
+                    if self.colibri_starting() or self.is_busy():
+                        # Soft skip while coli start / another action is in flight
+                        if self._loop_stop.wait(2.0):
+                            break
+                        continue
                     health = health_check(llm["base_url"], llm["api_key"])
+                    if self.colibri_starting() or self.is_busy():
+                        if self._loop_stop.wait(2.0):
+                            break
+                        continue
                     if not health.get("ok"):
                         self._colibri_was_down = True
                         self.log_queue.put(("log", f"Loop skip — Colibri down: {health.get('detail')}"))
@@ -817,7 +897,9 @@ class BotService:
                     break
                 interval = max(1, int(llm.get("status_interval_minutes") or 15)) * 60
                 try:
-                    if not self.is_busy():
+                    if self.colibri_starting():
+                        pass
+                    elif not self.is_busy():
                         self.check_colibri_health()
                         self._maybe_status_report(trigger="heartbeat", force=False)
                 except Exception as exc:
@@ -940,7 +1022,7 @@ class BotService:
             p = prog()
             p.set_phase(0, 100)
             llm = self.get_llm_config()
-            models_dir = llm.get("models_dir")
+            models_dir = self._persist_llm_models_dir(llm.get("models_dir"))
             try:
                 models = colibri_manager.list_models_merged(
                     models_dir, on_line=self._colibri_line
@@ -952,7 +1034,7 @@ class BotService:
             self.log_queue.put(("colibri_models", models))
             print(
                 f"  {local_n} local + {len(models) - local_n} catalog → {len(models)} model choice(s) "
-                f"in {colibri_manager.resolve_models_dir(models_dir)}"
+                f"in {models_dir}"
             )
 
         def colibri_download():
@@ -963,7 +1045,7 @@ class BotService:
             self._pending_colibri_model = None
             if not model_id:
                 raise ValueError("Select a Colibri model to download")
-            models_dir = llm.get("models_dir")
+            models_dir = self._persist_llm_models_dir(llm.get("models_dir"))
             if colibri_manager.model_present(models_dir, model_id):
                 print(f"  Using local model {model_id} in {models_dir}…")
             else:
@@ -977,7 +1059,7 @@ class BotService:
             cfg = self.load_config()
             llm = normalize_llm_config(cfg.get("llm"))
             llm["colibri_model"] = model_id
-            llm["models_dir"] = colibri_manager.resolve_models_dir(models_dir)
+            llm["models_dir"] = models_dir
             cfg["llm"] = llm
             path = os.path.join(BOT_DIR, "config.json")
             with open(path, "w", encoding="utf-8") as handle:
@@ -988,15 +1070,48 @@ class BotService:
         def colibri_start():
             p = prog()
             p.set_phase(0, 100)
+            # Arm grace before any I/O so the AI loop/heartbeat cannot race.
+            self._colibri_starting_until = time.time() + 300.0
             llm = self.get_llm_config()
+            models_dir = self._persist_llm_models_dir(llm.get("models_dir"))
             print("  Starting Colibri…")
-            colibri_manager.start_server(
-                models_dir=llm.get("models_dir"),
-                on_line=self._colibri_line,
-                coli_vk_device=llm.get("coli_vk_device"),
-            )
-            self.check_colibri_health()
-            print("  Colibri start requested")
+            try:
+                colibri_manager.start_server(
+                    models_dir=models_dir,
+                    on_line=self._colibri_line,
+                    coli_vk_device=llm.get("coli_vk_device"),
+                )
+                ready = colibri_manager.wait_until_ready(
+                    llm["base_url"],
+                    llm.get("api_key") or "local",
+                    timeout_s=300.0,
+                    interval_s=2.0,
+                    on_line=self._colibri_line,
+                )
+                # Update UI health without forcing a status-report completion mid-start
+                self.check_colibri_health(emit_status=False)
+                setup = colibri_manager.read_setup_json()
+                env = setup.get("env") if isinstance(setup.get("env"), dict) else {}
+                self.log_queue.put(("colibri_status", {
+                    "info": {
+                        "setup_gpu": str(setup.get("gpu") or ""),
+                        "coli_vk_dev": str(env.get("COLI_VK_DEV") or ""),
+                        "gpu_warning": colibri_manager.gpu_selection_warning(
+                            str(setup.get("gpu") or "")
+                        ),
+                        "models_dir": models_dir,
+                    },
+                    "status": {"ok": bool(ready.get("ok"))},
+                }))
+                if ready.get("ok"):
+                    print("  Colibri is ready")
+                else:
+                    print(
+                        f"  Colibri start requested but not ready yet: "
+                        f"{ready.get('detail') or 'timeout'}"
+                    )
+            finally:
+                self._colibri_starting_until = 0.0
 
         def colibri_stop():
             p = prog()
@@ -1009,9 +1124,10 @@ class BotService:
             p = prog()
             p.set_phase(0, 100)
             llm = self.get_llm_config()
+            models_dir = self._persist_llm_models_dir(llm.get("models_dir"))
             preferred = llm.get("coli_vk_device")
             pinned = colibri_manager.ensure_setup_vk_device(preferred)
-            info = colibri_manager.runtime_info(llm.get("models_dir"))
+            info = colibri_manager.runtime_info(models_dir)
             if pinned.get("name"):
                 info["setup_gpu"] = pinned["name"]
                 info["coli_vk_dev"] = str(pinned.get("index") if pinned.get("index") is not None else "")

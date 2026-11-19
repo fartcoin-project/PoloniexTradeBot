@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from typing import Any, Optional
 
 import httpx
@@ -80,20 +81,90 @@ def resolve_model(cfg: dict, timeout: float = 10.0) -> str:
     return models[0]
 
 
+def _delta_text(delta: dict, *keys: str) -> str:
+    for key in keys:
+        val = delta.get(key)
+        if isinstance(val, str) and val:
+            return val
+        if isinstance(val, list):
+            return "".join(
+                part.get("text", "") if isinstance(part, dict) else str(part)
+                for part in val
+            )
+    return ""
+
+
+def _consume_chat_stream(resp: httpx.Response, *, deadline: float, t0: float) -> dict[str, Any]:
+    """Accumulate OpenAI-style SSE chat chunks into content/thinking."""
+    content_parts: list[str] = []
+    thinking_parts: list[str] = []
+    chunk_count = 0
+    first_token_s: Optional[float] = None
+    for line in resp.iter_lines():
+        if time.monotonic() > deadline:
+            raise httpx.ReadTimeout("overall deadline exceeded", request=resp.request)
+        if not line:
+            continue
+        if not line.startswith("data:"):
+            continue
+        payload = line[5:].strip()
+        if payload == "[DONE]":
+            break
+        try:
+            chunk = json.loads(payload)
+        except json.JSONDecodeError:
+            continue
+        chunk_count += 1
+        choices = chunk.get("choices") if isinstance(chunk, dict) else None
+        if not isinstance(choices, list) or not choices:
+            continue
+        delta = choices[0].get("delta") or {}
+        if not isinstance(delta, dict):
+            continue
+        content_bit = _delta_text(delta, "content")
+        thinking_bit = _delta_text(delta, "reasoning_content", "thinking", "reasoning")
+        if (content_bit or thinking_bit) and first_token_s is None:
+            first_token_s = round(time.monotonic() - t0, 3)
+        if content_bit:
+            content_parts.append(content_bit)
+        if thinking_bit:
+            thinking_parts.append(thinking_bit)
+    content = "".join(content_parts)
+    thinking = "".join(thinking_parts)
+    return {
+        "content": content,
+        "thinking": thinking,
+        "first_token_s": first_token_s,
+        "chunk_count": chunk_count,
+        "raw": {
+            "stream": True,
+            "chunk_count": chunk_count,
+            "choices": [
+                {
+                    "message": {
+                        "content": content,
+                        "reasoning_content": thinking,
+                    }
+                }
+            ],
+        },
+    }
+
+
 def chat_completions(
     messages: list[dict],
     *,
     base_url: str,
     api_key: str = "local",
     model: str = "",
-    timeout: float = 120.0,
+    timeout: float = 300.0,
     temperature: float = 0.4,
     max_tokens: int = 2048,
     enable_thinking: bool = False,
     reasoning_effort: Optional[str] = None,
     extra: Optional[dict] = None,
 ) -> dict[str, Any]:
-    """POST /v1/chat/completions. Returns {content, thinking, raw}."""
+    """POST /v1/chat/completions (SSE stream). Returns {content, thinking, raw}."""
     llm = normalize_llm_config({
         "base_url": base_url,
         "api_key": api_key,
@@ -103,7 +174,7 @@ def chat_completions(
     body: dict[str, Any] = {
         "model": use_model,
         "messages": messages,
-        "stream": False,
+        "stream": True,
         "temperature": temperature,
         "max_tokens": max_tokens,
     }
@@ -115,34 +186,28 @@ def chat_completions(
         body.update(extra)
 
     url = f"{llm['base_url']}/chat/completions"
+    # Read timeout covers slow prefill / gaps between SSE chunks; overall deadline caps total.
+    timeout_cfg = httpx.Timeout(connect=10.0, read=float(timeout), write=30.0, pool=10.0)
+    t0 = time.monotonic()
+    deadline = t0 + float(timeout)
+    content = ""
+    thinking = ""
+    data: dict[str, Any] = {}
     try:
-        with httpx.Client(timeout=timeout) as client:
-            resp = client.post(url, headers=_headers(llm["api_key"]), json=body)
-            resp.raise_for_status()
-            data = resp.json()
+        with httpx.Client(timeout=timeout_cfg) as client:
+            with client.stream(
+                "POST", url, headers=_headers(llm["api_key"]), json=body
+            ) as resp:
+                resp.raise_for_status()
+                parsed = _consume_chat_stream(resp, deadline=deadline, t0=t0)
+                content = parsed.get("content") or ""
+                thinking = parsed.get("thinking") or ""
+                data = parsed.get("raw") or {}
     except httpx.HTTPError as exc:
         raise LlmError(f"chat/completions failed: {exc}") from exc
     except json.JSONDecodeError as exc:
         raise LlmError("Invalid chat/completions JSON") from exc
 
-    content = ""
-    thinking = ""
-    choices = data.get("choices") if isinstance(data, dict) else None
-    if isinstance(choices, list) and choices:
-        msg = choices[0].get("message") or {}
-        content = msg.get("content") or ""
-        thinking = (
-            msg.get("reasoning_content")
-            or msg.get("thinking")
-            or msg.get("reasoning")
-            or ""
-        )
-        if isinstance(content, list):
-            # Multimodal-style parts
-            content = "".join(
-                part.get("text", "") if isinstance(part, dict) else str(part)
-                for part in content
-            )
     return {
         "content": content.strip() if isinstance(content, str) else str(content),
         "thinking": thinking.strip() if isinstance(thinking, str) else str(thinking),

@@ -1,8 +1,8 @@
 ; TradeBot per-user installer (self-contained — no Python required on target PC)
-; Built by build_setup.ps1 → setup-v0.2.3.exe (onedir layout)
+; Built by build_setup.ps1 → setup-v0.2.6.exe (onedir layout)
 
 #define MyAppName "TradeBot"
-#define MyAppVersion "0.2.3"
+#define MyAppVersion "0.2.6"
 #define MyAppPublisher "TradeBot"
 #define MyAppExeName "TradeBot.exe"
 #define MyAppId "{{A7E3C2B1-4D5F-6A78-9B0C-1D2E3F4A5B6C}"

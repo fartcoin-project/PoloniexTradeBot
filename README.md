@@ -56,7 +56,7 @@ From project root:
 .\build_setup.ps1
 ```
 
-Output: **`setup-v0.2.3.exe`** (onedir: `TradeBot.exe` + `_internal`). No Python required on the target PC.
+Output: **`setup-v0.2.6.exe`** (onedir: `TradeBot.exe` + `_internal`). No Python required on the target PC.
 
 - Installs to `%LOCALAPPDATA%\Programs\TradeBot`
 - Stores config, API keys, logs, and caches in `%LOCALAPPDATA%\TradeBot`

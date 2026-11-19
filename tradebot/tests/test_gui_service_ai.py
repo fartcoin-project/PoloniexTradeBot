@@ -2,6 +2,7 @@
 
 import json
 import queue
+import time
 
 import pytest
 
@@ -211,3 +212,77 @@ def test_ai_status_report_emits_chat(tradebot_env, monkeypatch):
             found = True
             assert "stabiel" in payload["content"]
     assert found
+
+
+def test_colibri_start_waits_until_ready(tradebot_env, monkeypatch):
+    monkeypatch.setattr("gui.service.BOT_DIR", str(tradebot_env))
+    monkeypatch.chdir(tradebot_env)
+    models = tradebot_env / "colibri-models"
+    models.mkdir()
+    write_json(
+        tradebot_env / "config.json",
+        {
+            "budget": 5.0,
+            "markets": ["USDT"],
+            "llm": {
+                "enabled": True,
+                "models_dir": str(models),
+                "base_url": "http://127.0.0.1:8000/v1",
+                "status_reports_enabled": True,
+            },
+        },
+    )
+    calls = {"wait": 0, "start": 0, "status": 0}
+
+    monkeypatch.setattr(
+        "gui.service.colibri_manager.start_server",
+        lambda **kwargs: calls.__setitem__("start", calls["start"] + 1) or "started",
+    )
+
+    def fake_wait(*args, **kwargs):
+        calls["wait"] += 1
+        assert svc.colibri_starting() is True
+        return {"ok": True, "detail": "reachable", "models": ["m"]}
+
+    monkeypatch.setattr("gui.service.colibri_manager.wait_until_ready", fake_wait)
+    monkeypatch.setattr(
+        "gui.service.colibri_manager.read_setup_json",
+        lambda: {
+            "gpu": "Intel(R) Arc(TM) A770 Graphics",
+            "env": {"COLI_VK_DEV": "4"},
+        },
+    )
+    monkeypatch.setattr(
+        "gui.service.colibri_manager.gpu_selection_warning",
+        lambda *a, **k: "",
+    )
+    monkeypatch.setattr(
+        "gui.service.health_check",
+        lambda *a, **k: {"ok": True, "detail": "ok", "models": ["m"]},
+    )
+
+    log_queue = queue.Queue()
+    svc = BotService(log_queue)
+    svc._colibri_was_down = True
+    monkeypatch.setattr(
+        svc,
+        "_maybe_status_report",
+        lambda **kwargs: calls.__setitem__("status", calls["status"] + 1),
+    )
+    assert svc.run_sync("colibri_start") is True
+    assert calls["start"] == 1
+    assert calls["wait"] == 1
+    assert calls["status"] == 0  # no forced status report during start
+    assert svc.colibri_starting() is False
+    cfg = svc.load_config()
+    assert cfg["llm"]["models_dir"] == str(models.resolve())
+
+
+def test_maybe_status_report_skips_while_starting(tradebot_env, monkeypatch):
+    monkeypatch.setattr("gui.service.BOT_DIR", str(tradebot_env))
+    svc = BotService(queue.Queue())
+    svc._colibri_starting_until = time.time() + 60
+    called = {"n": 0}
+    monkeypatch.setattr(svc, "_ai_status_impl", lambda **kwargs: called.__setitem__("n", called["n"] + 1))
+    svc._maybe_status_report(trigger="colibri_up", force=True)
+    assert called["n"] == 0

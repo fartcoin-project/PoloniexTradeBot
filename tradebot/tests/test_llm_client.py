@@ -9,10 +9,11 @@ import llm_client
 
 
 class _FakeResponse:
-    def __init__(self, status_code=200, payload=None, text=""):
+    def __init__(self, status_code=200, payload=None, text="", lines=None):
         self.status_code = status_code
         self._payload = payload if payload is not None else {}
         self.text = text or json.dumps(self._payload)
+        self._lines = lines
 
     def raise_for_status(self):
         if self.status_code >= 400:
@@ -24,6 +25,25 @@ class _FakeResponse:
 
     def json(self):
         return self._payload
+
+    def iter_lines(self):
+        if self._lines is not None:
+            for line in self._lines:
+                yield line
+            return
+        yield f"data: {json.dumps(self._payload)}"
+        yield "data: [DONE]"
+
+
+class _FakeStreamCM:
+    def __init__(self, response):
+        self.response = response
+
+    def __enter__(self):
+        return self.response
+
+    def __exit__(self, *args):
+        return False
 
 
 class _FakeClient:
@@ -48,6 +68,12 @@ class _FakeClient:
                 return resp
         return _FakeResponse(404, {"error": "missing"})
 
+    def stream(self, method, url, headers=None, json=None):
+        for prefix, resp in self.routes:
+            if url.startswith(prefix) or prefix in url:
+                return _FakeStreamCM(resp)
+        return _FakeStreamCM(_FakeResponse(404, {"error": "missing"}))
+
 
 def test_list_models(monkeypatch):
     routes = [
@@ -62,22 +88,15 @@ def test_list_models(monkeypatch):
 
 
 def test_chat_completions_extracts_thinking(monkeypatch):
+    lines = [
+        'data: {"choices":[{"delta":{"reasoning_content":"Denk…"}}]}',
+        'data: {"choices":[{"delta":{"content":"Alles rustig."}}]}',
+        "data: [DONE]",
+    ]
     routes = [
         (
             "/chat/completions",
-            _FakeResponse(
-                200,
-                {
-                    "choices": [
-                        {
-                            "message": {
-                                "content": "Alles rustig.",
-                                "reasoning_content": "Denk…",
-                            }
-                        }
-                    ]
-                },
-            ),
+            _FakeResponse(200, lines=lines),
         )
     ]
     monkeypatch.setattr(llm_client.httpx, "Client", lambda timeout=None: _FakeClient(routes))
@@ -90,6 +109,7 @@ def test_chat_completions_extracts_thinking(monkeypatch):
     assert out["content"] == "Alles rustig."
     assert out["thinking"] == "Denk…"
     assert out["model"] == "glm-test"
+    assert out["raw"].get("stream") is True
 
 
 def test_resolve_model_uses_first(monkeypatch):
@@ -129,3 +149,17 @@ def test_messages_for_status_include_thinking_instruction():
     msgs = llm_client.messages_for_status({"budget": 1}, trigger="heartbeat")
     assert msgs[0]["role"] == "system"
     assert "Denk" in msgs[1]["content"] or "denk" in msgs[1]["content"].lower()
+
+
+def test_consume_chat_stream_deadline(monkeypatch):
+    class _SlowResp:
+        request = httpx.Request("POST", "http://x")
+
+        def iter_lines(self):
+            yield 'data: {"choices":[{"delta":{"content":"hi"}}]}'
+            # Simulate hanging after first token by never ending; deadline check
+            # happens at start of each iteration — raise by forcing past deadline.
+            raise httpx.ReadTimeout("overall deadline exceeded", request=self.request)
+
+    with pytest.raises(httpx.ReadTimeout):
+        llm_client._consume_chat_stream(_SlowResp(), deadline=0, t0=0)

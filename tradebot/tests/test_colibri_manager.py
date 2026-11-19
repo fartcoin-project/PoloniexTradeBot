@@ -272,3 +272,78 @@ def test_default_models_dir_prefers_appdata(tmp_path, monkeypatch):
         lambda p: str(tmp_path) if p == "~" else p,
     )
     assert cm.default_models_dir() == str(appdata)
+
+
+def test_normalize_models_dir_peels_model_subdir(tmp_path):
+    root = tmp_path / "colibri-models"
+    model = root / "qwen36-35b"
+    model.mkdir(parents=True)
+    (model / "config.json").write_text("{}", encoding="utf-8")
+    (model / "tokenizer.json").write_text("{}", encoding="utf-8")
+    assert cm.normalize_models_dir(str(model), create=False) == str(root.resolve())
+
+
+def test_normalize_models_dir_home_to_appdata(tmp_path, monkeypatch):
+    home = tmp_path / "colibri-models"
+    home.mkdir()
+    appdata = tmp_path / "AppData" / "colibri-models"
+    model = appdata / "qwen36-35b"
+    model.mkdir(parents=True)
+    (model / "config.json").write_text("{}", encoding="utf-8")
+
+    monkeypatch.setattr(cm, "colibri_models_dir", lambda: str(appdata))
+    monkeypatch.setattr(
+        os.path,
+        "expanduser",
+        lambda p: str(tmp_path) if p == "~" else (
+            os.path.join(str(tmp_path), p[2:]) if isinstance(p, str) and p.startswith("~/") else p
+        ),
+    )
+    assert cm.normalize_models_dir(str(home), create=False) == str(appdata.resolve())
+
+
+def test_normalize_models_dir_leaves_custom_path(tmp_path, monkeypatch):
+    custom = tmp_path / "my-models"
+    custom.mkdir()
+    appdata = tmp_path / "appdata-models"
+    appdata.mkdir()
+    (appdata / "qwen").mkdir()
+    (appdata / "qwen" / "config.json").write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(cm, "colibri_models_dir", lambda: str(appdata))
+    assert cm.normalize_models_dir(str(custom), create=False) == str(custom.resolve())
+
+
+def test_wait_until_ready_succeeds_after_retries(monkeypatch):
+    calls = {"n": 0}
+
+    def fake_health(base_url, api_key="local", timeout=5.0):
+        calls["n"] += 1
+        if calls["n"] < 3:
+            return {"ok": False, "detail": "refused", "models": []}
+        return {"ok": True, "detail": "reachable", "models": ["m1"]}
+
+    monkeypatch.setattr("llm_client.health_check", fake_health)
+    lines = []
+    result = cm.wait_until_ready(
+        "http://127.0.0.1:8000/v1",
+        timeout_s=5,
+        interval_s=0.01,
+        on_line=lines.append,
+    )
+    assert result["ok"] is True
+    assert calls["n"] == 3
+    assert any("ready" in line.lower() for line in lines)
+
+
+def test_wait_until_ready_times_out(monkeypatch):
+    monkeypatch.setattr(
+        "llm_client.health_check",
+        lambda *a, **k: {"ok": False, "detail": "refused", "models": []},
+    )
+    result = cm.wait_until_ready(
+        "http://127.0.0.1:8000/v1",
+        timeout_s=0.05,
+        interval_s=0.01,
+    )
+    assert result["ok"] is False
+    assert "refused" in str(result.get("detail") or "")

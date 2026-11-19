@@ -97,6 +97,7 @@ def test_options_colibri_pinned_visible_when_collapsed(qapp):
     from gui.panels import OptionsPanel
 
     panel = OptionsPanel()
+    panel.resize(1000, 800)
     panel.show()
     qapp.processEvents()
 
@@ -105,6 +106,9 @@ def test_options_colibri_pinned_visible_when_collapsed(qapp):
     assert panel.colibri_log.isVisible()
     assert panel.llm_enabled_check.isVisible()
     assert panel.colibri_start_btn.isVisible()
+    assert panel.colibri_stop_btn.isVisible()
+    assert panel.colibri_status_btn.isVisible()
+    assert panel.colibri_progress.isVisible()
     assert panel.llm_autostart_check.isVisible()
     assert not panel.llm_base_url_edit.isVisible()
     assert not panel.llm_models_dir_edit.isVisible()
@@ -116,6 +120,26 @@ def test_options_colibri_pinned_visible_when_collapsed(qapp):
     assert panel.llm_base_url_edit.isVisible()
     assert panel.llm_models_dir_edit.isVisible()
     assert panel.llm_auto_place_check.isVisible()
+    assert panel.llm_base_url_edit.maximumWidth() >= 100000
+    assert panel.llm_models_dir_edit.maximumWidth() >= 100000
+
+
+def test_options_error_log_min_height_when_expanded(qapp):
+    from gui.panels import OptionsPanel
+
+    panel = OptionsPanel()
+    panel.resize(900, 700)
+    panel.show()
+    qapp.processEvents()
+
+    panel.log_section.set_expanded(False)
+    qapp.processEvents()
+    assert panel.log_section.minimumHeight() == 0
+
+    panel.log_section.set_expanded(True)
+    qapp.processEvents()
+    expected = int(panel.height() * 0.30)
+    assert panel.log_section.minimumHeight() >= expected
 
 
 def test_collapsible_section_pinned_slots(qapp):
